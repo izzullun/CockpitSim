@@ -1,0 +1,13 @@
+# .NET
+bin/
+obj/
+*.user
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.vscode/
+*.suo
