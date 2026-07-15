@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CockpitSim — Login</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+  <div class="login-screen">
+
+    <div class="hud-bar">
+      <span class="hud-label">COCKPITSIM</span>
+      <span class="hud-status"><span class="status-dot"></span>SYS ONLINE</span>
+    </div>
+
+    <main class="login-panel scanlines">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+
+      <header class="login-header">
+        <h1 class="login-title">CockpitSim</h1>
+        <p class="login-subtitle">Helicopter cockpit training system</p>
+      </header>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div class="field-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" placeholder="trainee_adam" required>
+        </div>
+
+        <div class="field-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+        </div>
+
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+
+        <button type="submit" class="btn-login">
+          <span>Log in</span>
+        </button>
+      </form>
+
+      <footer class="login-footer">
+        <span>Build v0.1 — FYP dev shell</span>
+      </footer>
+    </main>
+
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>
