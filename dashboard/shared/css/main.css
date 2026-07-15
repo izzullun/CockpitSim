@@ -1,0 +1,89 @@
+/* CockpitSim — Shared Design Tokens
+   Dark cockpit/HUD theme. All dashboard pages import this first. */
+
+:root {
+  /* Base surfaces */
+  --bg-base: #0A0E14;
+  --bg-panel: #10151D;
+  --bg-panel-raised: #161C26;
+  --bg-input: #0D1219;
+
+  /* Accent */
+  --accent-cyan: #00D9FF;
+  --accent-cyan-dim: #0A8AA3;
+  --accent-cyan-glow: rgba(0, 217, 255, 0.15);
+
+  /* Status colors */
+  --status-ok: #3DDC97;
+  --status-warn: #FFB020;
+  --status-error: #FF4757;
+
+  /* Text */
+  --text-primary: #E8EDF2;
+  --text-secondary: #8A97A8;
+  --text-muted: #4E5A6B;
+
+  /* Borders */
+  --border-default: #212A36;
+  --border-strong: #2E3A48;
+  --border-focus: var(--accent-cyan);
+
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* Layout */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+/* Scanline texture — used sparingly, only on hero/login-style panels */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.015),
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}

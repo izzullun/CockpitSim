@@ -1,0 +1,191 @@
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  position: relative;
+}
+
+/* Top HUD strip */
+.hud-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-default);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+}
+
+.hud-label {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.hud-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-ok);
+  box-shadow: 0 0 6px var(--status-ok);
+}
+
+/* Login panel */
+.login-panel {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl) var(--space-lg) var(--space-lg);
+  animation: panel-in 0.4s ease-out;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Corner bracket accents — HUD framing motif */
+.corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--accent-cyan-dim);
+  border-style: solid;
+  border-width: 0;
+}
+.corner-tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.corner-tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.corner-bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.corner-br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.login-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.login-subtitle {
+  margin-top: var(--space-xs);
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-group label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.field-group input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.field-group input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+}
+
+.form-error {
+  font-size: 12px;
+  color: var(--status-error);
+  border-left: 2px solid var(--status-error);
+  padding-left: var(--space-sm);
+}
+
+.btn-login {
+  margin-top: var(--space-sm);
+  background: var(--accent-cyan);
+  color: #04202A;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.btn-login:hover {
+  filter: brightness(1.1);
+}
+
+.btn-login:active {
+  transform: scale(0.98);
+}
+
+.btn-login:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.login-footer {
+  margin-top: var(--space-lg);
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-panel {
+    padding: var(--space-lg) var(--space-md);
+  }
+  .hud-bar {
+    font-size: 10px;
+    padding: var(--space-sm) var(--space-md);
+  }
+}
