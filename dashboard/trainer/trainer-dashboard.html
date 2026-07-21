@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CockpitSim — Trainer Dashboard</title>
+	<link rel="stylesheet" href="../shared/css/main.css">
+	<link rel="stylesheet" href="trainer-dashboard.css">
+</head>
+<body>
+	<div class="trainer-screen scanlines">
+		<header class="hud-bar">
+			<div class="hud-item">
+				<span class="hud-label">CALLSIGN</span>
+				<span class="hud-value" id="hud-username">TRAINER_LIM</span>
+			</div>
+			<div class="hud-item hud-center">
+				<span class="hud-label">STATUS</span>
+				<span class="hud-value hud-status" id="hud-status">MONITORING</span>
+			</div>
+			<div class="hud-item hud-right">
+				<span class="hud-label">LOCAL TIME</span>
+				<span class="hud-value" id="hud-time">--:--:--</span>
+			</div>
+		</header>
+
+		<main class="dashboard-grid">
+			<section class="panel panel-analytics" aria-labelledby="analytics-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="analytics-heading" class="panel-title">01 // PERFORMANCE ANALYTICS</h2>
+				<div id="analytics-cards" class="analytics-cards"></div>
+				<div class="mini-chart" aria-label="Overall trend summary">
+					<div class="mini-chart-label">Overall trend</div>
+					<div id="trend-bars" class="trend-bars"></div>
+				</div>
+			</section>
+
+			<section class="panel panel-roster" aria-labelledby="roster-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="roster-heading" class="panel-title">02 // ALL TRAINEES</h2>
+				<div class="roster-layout">
+					<div class="roster-list-wrap">
+						<div class="panel-subtitle">Roster</div>
+						<div id="trainee-roster" class="trainee-roster"></div>
+					</div>
+					<div class="live-monitor-wrap">
+						<div class="panel-subtitle">Live monitoring</div>
+						<article class="live-monitor" aria-labelledby="live-monitor-heading">
+							<h3 id="live-monitor-heading" class="live-monitor-title">Selected trainee</h3>
+							<div class="live-monitor-name" id="live-trainee-name">Adam Haikal</div>
+							<div class="live-monitor-meta" id="live-trainee-meta">Autorotation Recovery • In session</div>
+							<dl class="live-stats" id="live-stats"></dl>
+							<div class="warnings-box">
+								<div class="warnings-title">Warnings</div>
+								<ul id="live-warnings" class="warnings-list"></ul>
+							</div>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel panel-sessions" aria-labelledby="sessions-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="sessions-heading" class="panel-title">03 // SESSION MANAGEMENT</h2>
+				<div class="session-actions">
+					<button class="action-btn action-primary" type="button">Assign session</button>
+					<button class="action-btn" type="button">Pause session</button>
+					<button class="action-btn" type="button">Resume session</button>
+					<button class="action-btn action-danger" type="button">End session</button>
+				</div>
+				<table class="session-table">
+					<thead>
+						<tr>
+							<th scope="col">Trainee</th>
+							<th scope="col">Exercise</th>
+							<th scope="col">State</th>
+							<th scope="col">Trainer action</th>
+						</tr>
+					</thead>
+					<tbody id="session-body"></tbody>
+				</table>
+			</section>
+
+			<section class="panel panel-feedback" aria-labelledby="feedback-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="feedback-heading" class="panel-title">04 // FEEDBACK</h2>
+				<label class="feedback-label" for="feedback-input">Provide feedback</label>
+				<textarea id="feedback-input" class="feedback-input" rows="4" placeholder="Example: Good job on the flare timing, but keep the descent smoother."></textarea>
+				<div class="feedback-controls">
+					<button class="action-btn action-primary" type="button" id="send-feedback-btn">Send feedback</button>
+					<button class="action-btn" type="button">Save note</button>
+				</div>
+				<div class="feedback-stream-wrap">
+					<div class="panel-subtitle">Recent comments</div>
+					<ul id="feedback-stream" class="feedback-stream"></ul>
+				</div>
+			</section>
+		</main>
+	</div>
+
+	<script src="trainer-dashboard.js"></script>
+</body>
+</html>
