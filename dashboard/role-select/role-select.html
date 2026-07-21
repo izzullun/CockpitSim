@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CockpitSim — Select Role</title>
+  <link rel="stylesheet" href="C:\Users\Adam Haikal\Documents\CockpitSim\dashboard\shared\css\main.css">
+  <link rel="stylesheet" href="role-select.css">
+</head>
+<body>
+
+  <div class="role-screen">
+
+    <div class="hud-bar">
+      <span class="hud-label">COCKPITSIM</span>
+      <span class="hud-status"><span class="status-dot"></span>SESSION ACTIVE</span>
+    </div>
+
+    <main class="role-panel">
+      <header class="role-header">
+        <h1 class="role-title">Select role</h1>
+        <p class="role-subtitle" id="welcome-text">Choose which dashboard to enter</p>
+      </header>
+
+      <div class="role-cards">
+        <button class="role-card" data-role="trainee" id="card-trainee">
+          <div class="corner corner-tl"></div>
+          <div class="corner corner-br"></div>
+          <span class="role-card-label">Trainee</span>
+          <span class="role-card-desc">View assigned exercises and flight scores</span>
+        </button>
+
+        <button class="role-card" data-role="trainer" id="card-trainer">
+          <div class="corner corner-tl"></div>
+          <div class="corner corner-br"></div>
+          <span class="role-card-label">Trainer</span>
+          <span class="role-card-desc">Review trainee telemetry and progress</span>
+        </button>
+      </div>
+
+      <a href="C:\Users\Adam Haikal\Documents\CockpitSim\dashboard\login\login.html" class="back-link">&larr; Back to login</a>
+    </main>
+
+  </div>
+
+  <script src="role-select.js"></script>
+</body>
+</html>
