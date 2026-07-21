@@ -1,0 +1,100 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name= "viewport" content="width=device-width, initial scale=1.0">
+<title>CockpitSim - Trainee Dashboard</title>
+<link rel = "stylesheet" href = "../shared/css/main.css">
+<link rel = "stylesheet" href = "pre-session.css">
+</head>
+<body>
+
+  <!-- HUD Status Bar -->
+  <header class = "hud-bar">
+    <div class="hud-item">
+      <span class ="hud-label">CALLSIGN</span>
+      <span class ="hud-value" id = "hud-username">TRAINEE_ADAM</span>
+    </div>
+    <div class="hud-item hud-center">
+      <span class="hud-label">STATUS</span>
+      <span class="hud-value hud-status" id="hud-status">STANDBY</span>
+    </div>
+    <div class="hud-item hud-right">
+      <span class="hud-label">LOCAL TIME</span>
+      <span class="hud-value" id="hud-time">--:--:--</span>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+ 
+    <!-- Profile Panel -->
+    <section class="panel panel-profile" aria-labelledby="profile-heading">
+      <div class="panel-corner panel-corner-tl"></div>
+      <div class="panel-corner panel-corner-br"></div>
+      <h2 id="profile-heading" class="panel-title">01 // PILOT PROFILE</h2>
+      <dl class="profile-list">
+        <div class="profile-row">
+          <dt>Full Name</dt>
+          <dd id="profile-name">Adam Haikal</dd>
+        </div>
+        <div class="profile-row">
+          <dt>Role</dt>
+          <dd id="profile-role">Trainee</dd>
+        </div>
+        <div class="profile-row">
+          <dt>Assigned Trainer</dt>
+          <dd id="profile-trainer">Aiman Hakim Redza</dd>
+        </div>
+        <div class="profile-row">
+          <dt>Last Login</dt>
+          <dd id="profile-last-login">2026-07-12 09:41</dd>
+        </div>
+      </dl>
+    </section>
+ 
+    <!-- Upcoming Session Panel -->
+    <section class="panel panel-upcoming" aria-labelledby="upcoming-heading">
+      <div class="panel-corner panel-corner-tl"></div>
+      <div class="panel-corner panel-corner-br"></div>
+      <h2 id="upcoming-heading" class="panel-title">02 // ASSIGNED SESSION</h2>
+      <div class="upcoming-body">
+        <p class="upcoming-exercise" id="upcoming-exercise">Autorotation Recovery — Attempt 4</p>
+        <p class="upcoming-meta">
+          <span>Scheduled: <span id="upcoming-date">2026-07-21 14:00</span></span>
+          <span>Est. Duration: <span id="upcoming-duration">25 min</span></span>
+        </p>
+        <p class="upcoming-notes" id="upcoming-notes">
+          Focus on collective timing during flare. Trainer notes from last attempt available below.
+        </p>
+        <button class="btn-start-session" id="btn-start-session" type="button">
+          <span class="btn-icon" aria-hidden="true">&#9654;</span> START SESSION
+        </button>
+        <p class="upcoming-hint">Launches MSFS 2024 and begins telemetry capture.</p>
+      </div>
+    </section>
+ 
+    <!-- Session History Panel -->
+    <section class="panel panel-history" aria-labelledby="history-heading">
+      <div class="panel-corner panel-corner-tl"></div>
+      <div class="panel-corner panel-corner-br"></div>
+      <h2 id="history-heading" class="panel-title">03 // SESSION HISTORY</h2>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th scope="col">Attempt</th>
+            <th scope="col">Date</th>
+            <th scope="col">Duration</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Feedback</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <!-- rows injected by pre-session.js from dummy data -->
+        </tbody>
+      </table>
+    </section>
+ 
+  </main>
+ 
+  <script src="pre-session.js"></script>
+</body>
+</html>

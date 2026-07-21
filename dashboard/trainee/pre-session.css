@@ -1,0 +1,244 @@
+/* ==========================================================================
+   Trainee Dashboard — Pre-Session View
+   Relies on design tokens defined in dashboard/shared/css/main.css
+   (--bg-base, --accent-cyan, --font-mono, spacing scale, etc.)
+   ========================================================================== */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-base, #0A0E14);
+  color: var(--text-primary, #E6F1FF);
+  font-family: var(--font-mono, 'JetBrains Mono', 'IBM Plex Mono', monospace);
+}
+
+/* ---------- HUD Bar ---------- */
+.hud-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.75rem;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.25);
+  background: linear-gradient(180deg, rgba(0, 217, 255, 0.05), transparent);
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hud-center { text-align: center; align-items: center; }
+.hud-right { text-align: right; align-items: flex-end; }
+
+.hud-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: rgba(230, 241, 255, 0.45);
+}
+
+.hud-value {
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+.hud-status {
+  color: var(--accent-cyan, #00D9FF);
+  font-weight: 600;
+}
+
+/* ---------- Grid Layout ---------- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  grid-template-areas:
+    "profile upcoming"
+    "history history";
+  gap: 1.5rem;
+  padding: 1.75rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.panel-profile  { grid-area: profile; }
+.panel-upcoming { grid-area: upcoming; }
+.panel-history  { grid-area: history; }
+
+/* ---------- Panel Shell (corner-bracket framing) ---------- */
+.panel {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(0, 217, 255, 0.18);
+  padding: 1.5rem;
+}
+
+.panel-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--accent-cyan, #00D9FF);
+  border-style: solid;
+}
+
+.panel-corner-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.panel-corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+.panel-title {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--accent-cyan, #00D9FF);
+  text-transform: uppercase;
+}
+
+/* ---------- Profile Panel ---------- */
+.profile-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dashed rgba(230, 241, 255, 0.1);
+}
+
+.profile-row dt {
+  color: rgba(230, 241, 255, 0.5);
+  font-size: 0.8rem;
+}
+
+.profile-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+/* ---------- Upcoming Session Panel ---------- */
+.upcoming-exercise {
+  font-size: 1.05rem;
+  color: var(--text-primary, #E6F1FF);
+  margin: 0 0 0.6rem;
+}
+
+.upcoming-meta {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: rgba(230, 241, 255, 0.55);
+  margin: 0 0 1rem;
+}
+
+.upcoming-notes {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(230, 241, 255, 0.7);
+  margin: 0 0 1.5rem;
+}
+
+.btn-start-session {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent-cyan, #00D9FF);
+  color: #041016;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.btn-start-session:hover {
+  box-shadow: 0 0 18px rgba(0, 217, 255, 0.55);
+}
+
+.btn-start-session:active {
+  transform: scale(0.98);
+}
+
+.btn-start-session:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.btn-icon { font-size: 0.7rem; }
+
+.upcoming-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.7rem;
+  color: rgba(230, 241, 255, 0.4);
+}
+
+/* ---------- Session History Table ---------- */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  color: rgba(230, 241, 255, 0.45);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.history-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid rgba(230, 241, 255, 0.06);
+}
+
+.outcome-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.outcome-success {
+  background: rgba(0, 217, 255, 0.12);
+  color: var(--accent-cyan, #00D9FF);
+}
+
+.outcome-failed {
+  background: rgba(255, 90, 90, 0.12);
+  color: #FF6B6B;
+}
+
+.outcome-pending {
+  background: rgba(230, 241, 255, 0.08);
+  color: rgba(230, 241, 255, 0.55);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "profile"
+      "upcoming"
+      "history";
+  }
+
+  .hud-bar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-start-session {
+    transition: none;
+  }
+}
