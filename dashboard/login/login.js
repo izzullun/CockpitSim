@@ -37,5 +37,5 @@ document.getElementById('login-form').addEventListener('submit', function (e) {
   console.log('[login.js] Submit captured (shell only):', { username });
 
   // Placeholder redirect — see TODO above.
-  window.location.href = 'C:\Users\Adam Haikal\Documents\CockpitSim\dashboard\role-select\role-select.html';
+  window.location.href = '../role-select/role-select.html';
 });
