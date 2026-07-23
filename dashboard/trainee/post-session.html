@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CockpitSim - Trainee Post Session</title>
+  <link rel="stylesheet" href="../shared/css/main.css">
+  <link rel="stylesheet" href="post-session.css">
+</head>
+<body>
+  <div class="post-session-screen scanlines">
+    <header class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">CALLSIGN</span>
+        <span class="hud-value" id="hud-username">TRAINEE_ADAM</span>
+      </div>
+      <div class="hud-item hud-center">
+        <span class="hud-label">STATUS</span>
+        <span class="hud-value hud-status" id="hud-status">POST-SESSION REPORT</span>
+      </div>
+      <div class="hud-item hud-right">
+        <span class="hud-label">LOCAL TIME</span>
+        <span class="hud-value" id="hud-time">--:--:--</span>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="panel panel-summary" aria-labelledby="summary-heading">
+        <div class="panel-corner panel-corner-tl"></div>
+        <div class="panel-corner panel-corner-br"></div>
+        <h2 id="summary-heading" class="panel-title">01 // SESSION SUMMARY</h2>
+        <div class="summary-hero">
+          <div>
+            <div class="summary-label">Exercise</div>
+            <div class="summary-value" id="summary-exercise">Autorotation Recovery — Attempt 4</div>
+          </div>
+          <div class="summary-pill success" id="summary-outcome">PASS</div>
+        </div>
+        <div class="summary-grid" id="summary-cards"></div>
+      </section>
+
+      <section class="panel panel-report" aria-labelledby="report-heading">
+        <div class="panel-corner panel-corner-tl"></div>
+        <div class="panel-corner panel-corner-br"></div>
+        <h2 id="report-heading" class="panel-title">02 // PERFORMANCE REPORT</h2>
+        <div class="report-layout">
+          <article class="report-block">
+            <h3 class="block-title">Telemetry snapshot</h3>
+            <dl class="stats-list" id="telemetry-stats"></dl>
+          </article>
+          <article class="report-block">
+            <h3 class="block-title">Trainer notes</h3>
+            <ul class="notes-list" id="trainer-notes"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel panel-timeline" aria-labelledby="timeline-heading">
+        <div class="panel-corner panel-corner-tl"></div>
+        <div class="panel-corner panel-corner-br"></div>
+        <h2 id="timeline-heading" class="panel-title">03 // SESSION TIMELINE</h2>
+        <ol class="timeline-list" id="timeline-list"></ol>
+      </section>
+
+      <section class="panel panel-actions" aria-labelledby="actions-heading">
+        <div class="panel-corner panel-corner-tl"></div>
+        <div class="panel-corner panel-corner-br"></div>
+        <h2 id="actions-heading" class="panel-title">04 // NEXT ACTIONS</h2>
+        <p class="action-copy" id="action-copy">Review the full session report before starting the next attempt.</p>
+        <div class="action-row">
+          <a class="action-link action-primary" href="./pre-session.html">Run another session</a>
+          <a class="action-link" href="../role-select/role-select.html">Return to role select</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="post-session.js"></script>
+</body>
+</html>
