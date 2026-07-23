@@ -98,9 +98,18 @@ function tickClock() {
   el.textContent = now.toLocaleTimeString("en-GB", { hour12: false });
 }
 
+let launchInProgress = false;
+let handoffTimer = null;
+
 function startSession() {
   const statusEl = document.getElementById("hud-status");
   const btn = document.getElementById("btn-start-session");
+
+  if (launchInProgress) {
+    return;
+  }
+
+  launchInProgress = true;
 
   // TODO: replace with real Launcher API call:
   //   fetch("http://localhost:PORT/msfs/launch", { method: "POST" })
@@ -113,8 +122,10 @@ function startSession() {
   console.log("[pre-session] startSession() stub called — no Launcher API wired yet.");
 
   // Simulated feedback only, for demo purposes until Launcher API exists.
-  setTimeout(() => {
+  handoffTimer = setTimeout(() => {
     statusEl.textContent = "ACTIVE (SIMULATED)";
+
+    window.location.href = "./post-session.html";
   }, 1200);
 }
 
