@@ -3,7 +3,9 @@ body {
   min-height: 100vh;
   background: var(--bg-base, #0A0E14);
   color: var(--text-primary, #E8EDF2);
-  font-family: var(--font-mono, 'JetBrains Mono', 'IBM Plex Mono', monospace);
+  font-family: var(--font-sans, 'IBM Plex Sans', 'Segoe UI', sans-serif);
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
 }
 
 .post-session-screen {
@@ -39,11 +41,13 @@ body {
   font-size: 0.65rem;
   letter-spacing: 0.15em;
   color: rgba(232, 237, 242, 0.45);
+  font-family: var(--font-mono);
 }
 
 .hud-value {
   font-size: 0.9rem;
   letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }
 
 .hud-status {
@@ -70,8 +74,8 @@ body {
 
 .panel {
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(0, 217, 255, 0.18);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(0, 217, 255, 0.22);
   padding: 1.5rem;
 }
 
@@ -88,10 +92,28 @@ body {
 
 .panel-title {
   margin: 0 0 1.25rem;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   color: var(--accent-cyan, #00D9FF);
   text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.panel-title span {
+  line-height: 1.1;
+}
+
+.panel-title-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 .summary-hero {
@@ -101,7 +123,7 @@ body {
   gap: 1rem;
   padding-bottom: 1rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(232, 237, 242, 0.06);
+  border-bottom: 1px solid rgba(232, 237, 242, 0.1);
 }
 
 .summary-label,
@@ -110,11 +132,13 @@ body {
   letter-spacing: 0.08em;
   color: rgba(232, 237, 242, 0.45);
   text-transform: uppercase;
+  font-family: var(--font-mono);
 }
 
 .summary-value {
   margin-top: 0.35rem;
   font-size: 1.05rem;
+  font-family: var(--font-mono);
 }
 
 .summary-pill {
@@ -141,8 +165,8 @@ body {
 
 .summary-card {
   padding: 1rem;
-  border: 1px solid rgba(232, 237, 242, 0.08);
-  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(232, 237, 242, 0.12);
+  background: rgba(255, 255, 255, 0.055);
   min-height: 92px;
 }
 
@@ -151,12 +175,14 @@ body {
   display: block;
   font-size: 0.72rem;
   color: rgba(232, 237, 242, 0.45);
+  font-family: var(--font-mono);
 }
 
 .summary-card-value {
   display: block;
   margin: 0.35rem 0 0.4rem;
   font-size: 1.15rem;
+  font-family: var(--font-mono);
 }
 
 .report-layout {
@@ -166,8 +192,8 @@ body {
 
 .report-block {
   padding: 1rem;
-  border: 1px solid rgba(232, 237, 242, 0.08);
-  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(232, 237, 242, 0.12);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .block-title {
@@ -184,24 +210,28 @@ body {
   font-size: 0.7rem;
   color: rgba(232, 237, 242, 0.45);
   margin-bottom: 0.18rem;
+  font-family: var(--font-mono);
 }
 
 .stat-item dd {
   margin: 0;
   font-size: 0.92rem;
+  font-family: var(--font-mono);
 }
 
 .notes-list {
   list-style: none;
   display: grid;
   gap: 0.7rem;
+  font-family: var(--font-sans);
 }
 
 .note-item {
   padding-left: 0.9rem;
   position: relative;
   color: rgba(232, 237, 242, 0.78);
-  line-height: 1.5;
+  line-height: 1.6;
+  font-family: var(--font-sans);
 }
 
 .note-item::before {
@@ -225,21 +255,25 @@ body {
   grid-template-columns: 5rem 1fr;
   gap: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(232, 237, 242, 0.06);
+  border-bottom: 1px solid rgba(232, 237, 242, 0.1);
 }
 
 .timeline-time {
   color: var(--accent-cyan, #00D9FF);
+  font-family: var(--font-mono);
 }
 
 .timeline-event {
   color: rgba(232, 237, 242, 0.78);
+  font-family: var(--font-sans);
+  line-height: 1.6;
 }
 
 .action-copy {
   color: rgba(232, 237, 242, 0.72);
   line-height: 1.6;
   margin-bottom: 1.1rem;
+  font-family: var(--font-sans);
 }
 
 .action-row {
@@ -253,11 +287,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0.72rem 1rem;
-  border: 1px solid rgba(232, 237, 242, 0.12);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(232, 237, 242, 0.16);
+  background: rgba(255, 255, 255, 0.055);
   color: var(--text-primary, #E8EDF2);
   letter-spacing: 0.05em;
   transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  font-family: var(--font-mono);
 }
 
 .action-primary {
@@ -268,12 +303,12 @@ body {
 }
 
 .action-link:hover {
-  border-color: rgba(0, 217, 255, 0.45);
+  border-color: rgba(0, 217, 255, 0.55);
   transform: translateY(-1px);
 }
 
 .action-primary:hover {
-  box-shadow: 0 0 18px rgba(0, 217, 255, 0.45);
+  box-shadow: 0 0 18px rgba(0, 217, 255, 0.5);
 }
 
 @media (max-width: 980px) {

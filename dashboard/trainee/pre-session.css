@@ -9,7 +9,9 @@ body {
   min-height: 100vh;
   background: var(--bg-base, #0A0E14);
   color: var(--text-primary, #E6F1FF);
-  font-family: var(--font-mono, 'JetBrains Mono', 'IBM Plex Mono', monospace);
+  font-family: var(--font-sans, 'IBM Plex Sans', 'Segoe UI', sans-serif);
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
 }
 
 /* ---------- HUD Bar ---------- */
@@ -35,11 +37,13 @@ body {
   font-size: 0.65rem;
   letter-spacing: 0.15em;
   color: rgba(230, 241, 255, 0.45);
+  font-family: var(--font-mono);
 }
 
 .hud-value {
   font-size: 0.9rem;
   letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }
 
 .hud-status {
@@ -67,8 +71,8 @@ body {
 /* ---------- Panel Shell (corner-bracket framing) ---------- */
 .panel {
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(0, 217, 255, 0.18);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(0, 217, 255, 0.22);
   padding: 1.5rem;
 }
 
@@ -85,10 +89,28 @@ body {
 
 .panel-title {
   margin: 0 0 1.25rem;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   color: var(--accent-cyan, #00D9FF);
   text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.panel-title span {
+  line-height: 1.1;
+}
+
+.panel-title-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 /* ---------- Profile Panel ---------- */
@@ -104,18 +126,21 @@ body {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.6rem;
-  border-bottom: 1px dashed rgba(230, 241, 255, 0.1);
+  border-bottom: 1px dashed rgba(230, 241, 255, 0.14);
 }
 
 .profile-row dt {
   color: rgba(230, 241, 255, 0.5);
   font-size: 0.8rem;
+  font-family: var(--font-mono);
 }
 
 .profile-row dd {
   margin: 0;
   font-size: 0.9rem;
   text-align: right;
+  font-family: var(--font-sans);
+  line-height: 1.6;
 }
 
 /* ---------- Upcoming Session Panel ---------- */
@@ -123,6 +148,7 @@ body {
   font-size: 1.05rem;
   color: var(--text-primary, #E6F1FF);
   margin: 0 0 0.6rem;
+  font-family: var(--font-mono);
 }
 
 .upcoming-meta {
@@ -131,10 +157,12 @@ body {
   font-size: 0.8rem;
   color: rgba(230, 241, 255, 0.55);
   margin: 0 0 1rem;
+  font-family: var(--font-mono);
 }
 
 .upcoming-notes {
-  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
   line-height: 1.5;
   color: rgba(230, 241, 255, 0.7);
   margin: 0 0 1.5rem;
@@ -154,6 +182,7 @@ body {
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
+  font-family: var(--font-mono);
 }
 
 .btn-start-session:hover {
@@ -169,12 +198,19 @@ body {
   outline-offset: 3px;
 }
 
-.btn-icon { font-size: 0.7rem; }
+.btn-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  fill: currentColor;
+}
 
 .upcoming-hint {
   margin: 0.75rem 0 0;
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
   color: rgba(230, 241, 255, 0.4);
+  line-height: 1.55;
 }
 
 /* ---------- Session History Table ---------- */
@@ -190,12 +226,18 @@ body {
   color: rgba(230, 241, 255, 0.45);
   font-weight: 500;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 217, 255, 0.24);
 }
 
 .history-table td {
   padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid rgba(230, 241, 255, 0.06);
+  border-bottom: 1px solid rgba(230, 241, 255, 0.1);
+  font-family: var(--font-mono);
+}
+
+.history-table td:last-child {
+  font-family: var(--font-sans);
+  line-height: 1.5;
 }
 
 .outcome-badge {
@@ -207,17 +249,17 @@ body {
 }
 
 .outcome-success {
-  background: rgba(0, 217, 255, 0.12);
+  background: rgba(0, 217, 255, 0.18);
   color: var(--accent-cyan, #00D9FF);
 }
 
 .outcome-failed {
-  background: rgba(255, 90, 90, 0.12);
+  background: rgba(255, 90, 90, 0.18);
   color: #FF6B6B;
 }
 
 .outcome-pending {
-  background: rgba(230, 241, 255, 0.08);
+  background: rgba(230, 241, 255, 0.12);
   color: rgba(230, 241, 255, 0.55);
 }
 
