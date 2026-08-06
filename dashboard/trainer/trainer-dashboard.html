@@ -4,6 +4,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>CockpitSim — Trainer Dashboard</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="../shared/css/main.css">
 	<link rel="stylesheet" href="trainer-dashboard.css">
 </head>
@@ -22,13 +25,25 @@
 				<span class="hud-label">LOCAL TIME</span>
 				<span class="hud-value" id="hud-time">--:--:--</span>
 			</div>
+			<div class="hud-item hud-actions">
+				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
+			</div>
 		</header>
 
 		<main class="dashboard-grid">
 			<section class="panel panel-analytics" aria-labelledby="analytics-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
-				<h2 id="analytics-heading" class="panel-title">01 // PERFORMANCE ANALYTICS</h2>
+				<h2 id="analytics-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M4 19V5"></path>
+						<path d="M4 19h16"></path>
+						<rect x="7" y="12" width="3" height="7"></rect>
+						<rect x="12" y="9" width="3" height="10"></rect>
+						<rect x="17" y="6" width="3" height="13"></rect>
+					</svg>
+					<span>01 // PERFORMANCE ANALYTICS</span>
+				</h2>
 				<div id="analytics-cards" class="analytics-cards"></div>
 				<div class="mini-chart" aria-label="Overall trend summary">
 					<div class="mini-chart-label">Overall trend</div>
@@ -39,7 +54,14 @@
 			<section class="panel panel-roster" aria-labelledby="roster-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
-				<h2 id="roster-heading" class="panel-title">02 // ALL TRAINEES</h2>
+				<h2 id="roster-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+						<circle cx="9" cy="7" r="4"></circle>
+						<path d="M21 21v-2a3 3 0 0 0-3-3h-3"></path>
+					</svg>
+					<span>02 // ALL TRAINEES</span>
+				</h2>
 				<div class="roster-layout">
 					<div class="roster-list-wrap">
 						<div class="panel-subtitle">Roster</div>
@@ -64,7 +86,13 @@
 			<section class="panel panel-sessions" aria-labelledby="sessions-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
-				<h2 id="sessions-heading" class="panel-title">03 // SESSION MANAGEMENT</h2>
+				<h2 id="sessions-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<rect x="4" y="5" width="16" height="14" rx="2"></rect>
+						<path d="M8 9h8M8 12h5M8 15h6"></path>
+					</svg>
+					<span>03 // SESSION MANAGEMENT</span>
+				</h2>
 				<div class="session-actions">
 					<button class="action-btn action-primary" type="button">Assign session</button>
 					<button class="action-btn" type="button">Pause session</button>
@@ -87,7 +115,14 @@
 			<section class="panel panel-feedback" aria-labelledby="feedback-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
-				<h2 id="feedback-heading" class="panel-title">04 // FEEDBACK</h2>
+				<h2 id="feedback-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+						<path d="M8 10h8M8 14h5"></path>
+					</svg>
+					<span>04 // FEEDBACK</span>
+				</h2>
+				<p class="feedback-target" id="feedback-target">Selected trainee: Adam Haikal</p>
 				<label class="feedback-label" for="feedback-input">Provide feedback</label>
 				<textarea id="feedback-input" class="feedback-input" rows="4" placeholder="Example: Good job on the flare timing, but keep the descent smoother."></textarea>
 				<div class="feedback-controls">

@@ -65,11 +65,17 @@ const SESSION_QUEUE = [
 	{ trainee: 'Faiz Rahman', exercise: 'Emergency Landing', state: 'Paused', action: 'Resume' },
 ];
 
-const FEEDBACK = [
-	{ author: 'Trainer Lim', time: '16:22', note: 'Good job on the recovery profile, but keep the flare smoother.' },
-	{ author: 'Trainer Lim', time: '15:58', note: 'Siti is stable. Push the hover hold duration on the next attempt.' },
-	{ author: 'Trainer Lim', time: '15:30', note: 'Faiz needs one-on-one review after repeated descent warnings.' },
-];
+const FEEDBACK_BY_TRAINEE = {
+	1: [
+		{ author: 'Trainer Lim', time: '16:22', note: 'Good job on the recovery profile, but keep the flare smoother.' },
+	],
+	2: [
+		{ author: 'Trainer Lim', time: '15:58', note: 'Siti is stable. Push the hover hold duration on the next attempt.' },
+	],
+	3: [
+		{ author: 'Trainer Lim', time: '15:30', note: 'Faiz needs one-on-one review after repeated descent warnings.' },
+	],
+};
 
 const TREND_BARS = [68, 72, 74, 80, 83, 87];
 
@@ -143,6 +149,7 @@ function renderLiveMonitor() {
 
 	document.getElementById('live-trainee-name').textContent = trainee.fullName;
 	document.getElementById('live-trainee-meta').textContent = `${trainee.currentExercise} • ${trainee.sessionState} • ${trainee.connectionState}`;
+	document.getElementById('feedback-target').textContent = `Selected trainee: ${trainee.fullName}`;
 
 	const liveStats = document.getElementById('live-stats');
 	liveStats.innerHTML = '';
@@ -163,6 +170,16 @@ function renderLiveMonitor() {
 		item.innerHTML = `<strong>${trainee.riskLevel === 'High' ? 'High priority' : 'Info'}</strong>${warning}`;
 		warnings.appendChild(item);
 	});
+
+	renderFeedback();
+}
+
+function getSelectedTraineeFeedback() {
+	if (!FEEDBACK_BY_TRAINEE[selectedTraineeId]) {
+		FEEDBACK_BY_TRAINEE[selectedTraineeId] = [];
+	}
+
+	return FEEDBACK_BY_TRAINEE[selectedTraineeId];
 }
 
 function renderSessions() {
@@ -185,7 +202,17 @@ function renderFeedback() {
 	const list = document.getElementById('feedback-stream');
 	list.innerHTML = '';
 
-	FEEDBACK.forEach((entry) => {
+	const traineeFeedback = getSelectedTraineeFeedback();
+
+	if (traineeFeedback.length === 0) {
+		const empty = document.createElement('li');
+		empty.className = 'feedback-empty';
+		empty.textContent = 'No feedback yet for this trainee.';
+		list.appendChild(empty);
+		return;
+	}
+
+	traineeFeedback.forEach((entry) => {
 		const item = document.createElement('li');
 		item.className = 'feedback-item';
 		item.innerHTML = `
@@ -203,9 +230,20 @@ function bindFeedbackButton() {
 		const text = input.value.trim();
 		if (!text) return;
 
-		FEEDBACK.unshift({ author: 'Trainer Lim', time: new Date().toLocaleTimeString('en-GB', { hour12: false }), note: text });
+		getSelectedTraineeFeedback().unshift({
+			author: 'Trainer Lim',
+			time: new Date().toLocaleTimeString('en-GB', { hour12: false }),
+			note: text,
+		});
 		input.value = '';
 		renderFeedback();
+	});
+}
+
+function bindLogoutButton() {
+	const button = document.getElementById('logout-btn');
+	button.addEventListener('click', () => {
+		window.location.href = '../login/login.html';
 	});
 }
 
@@ -214,8 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	renderRoster();
 	renderLiveMonitor();
 	renderSessions();
-	renderFeedback();
 	bindFeedbackButton();
+	bindLogoutButton();
 	tickClock();
 	setInterval(tickClock, 1000);
 });
