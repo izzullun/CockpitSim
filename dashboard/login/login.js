@@ -1,24 +1,26 @@
-// CockpitSim — Login page
-// STATUS: UI shell only. No real auth logic yet.
-// TODO (Sprint 2+): replace this with a call to the backend API
-// (Member 3's ASP.NET Core endpoint, e.g. POST /api/auth/login).
-//
-// DECIDED FLOW (confirmed with Adam):
-//   Role Select is a post-login confirmation screen, mainly for admin
-//   accounts and dev/demo convenience.
-//   - trainee / trainer accounts should eventually SKIP role-select and
-//     redirect straight to their dashboard, using the `role` field the
-//     backend returns from the users table.
-//   - admin accounts (or any account during dev/testing) land on
-//     role-select.html to manually choose which dashboard to preview.
-// Until the backend exists, we can't tell accounts apart, so everyone
-// is routed through role-select.html for now. Replace the redirect below
-// with role-based branching once Member 3's auth endpoint is ready, e.g.:
-//   if (data.role === 'trainee') location.href = '../trainee/trainee-dashboard.html';
-//   else if (data.role === 'trainer') location.href = '../trainer/trainer-dashboard.html';
-//   else location.href = '../role-select/role-select.html';
+const TOKEN_STORAGE_KEY = 'cockpitSim.jwt';
+const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
 
-document.getElementById('login-form').addEventListener('submit', function (e) {
+function decodeJwtPayload(token) {
+  const payloadSegment = token.split('.')[1];
+
+  if (!payloadSegment) {
+    throw new Error('Invalid token payload.');
+  }
+
+  const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+  const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const bytes = Uint8Array.from(atob(paddedBase64), (character) => character.charCodeAt(0));
+
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function showError(errorEl, message) {
+  errorEl.textContent = message;
+  errorEl.hidden = false;
+}
+
+document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
 
   const username = document.getElementById('username').value.trim();
@@ -28,14 +30,47 @@ document.getElementById('login-form').addEventListener('submit', function (e) {
   errorEl.hidden = true;
 
   if (!username || !password) {
-    errorEl.textContent = 'Enter both username and password.';
-    errorEl.hidden = false;
+    showError(errorEl, 'Enter both username and password.');
     return;
   }
 
-  // --- Placeholder only: no real validation against dummy or live data yet ---
-  console.log('[login.js] Submit captured (shell only):', { username });
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await response.json().catch(() => ({}));
 
-  // Placeholder redirect — see TODO above.
-  window.location.href = '../role-select/role-select.html';
+    if (!response.ok) {
+      showError(errorEl, data.message || 'Invalid username or password.');
+      return;
+    }
+
+    if (typeof data.token !== 'string' || !data.token) {
+      throw new Error('The server did not return a valid login token.');
+    }
+
+    const payload = decodeJwtPayload(data.token);
+    const role = String(payload[ROLE_CLAIM] || '').toLowerCase();
+
+    sessionStorage.setItem(TOKEN_STORAGE_KEY, data.token);
+
+    // TODO: role-select is intentionally bypassed here and may be reinserted
+    // into the redirect flow later for admin or role-confirmation workflows.
+    if (role === 'trainee') {
+      window.location.href = '../trainee/pre-session.html';
+      return;
+    }
+
+    if (role === 'trainer') {
+      window.location.href = '../trainer/trainer-dashboard.html';
+      return;
+    }
+
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    showError(errorEl, 'Your account role does not have a dashboard entry point yet.');
+  } catch (error) {
+    showError(errorEl, error.message || 'Unable to sign in. Please try again.');
+  }
 });
