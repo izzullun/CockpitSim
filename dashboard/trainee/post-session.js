@@ -87,11 +87,19 @@ function renderTimeline() {
   });
 }
 
+function bindLogoutButton() {
+	const button = document.getElementById('logout-btn');
+	button.addEventListener('click', () => {
+		window.location.href = '../login/login.html';
+	});
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderSummaryCards();
   renderTelemetry();
   renderNotes();
   renderTimeline();
+  bindLogoutButton();
   tickClock();
   setInterval(tickClock, 1000);
 });

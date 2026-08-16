@@ -1,4 +1,10 @@
 .login-screen {
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-family: var(--font-sans);
+}
+
+.login-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -18,15 +24,16 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--border-default);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(0, 217, 255, 0.25);
+  background: linear-gradient(180deg, rgba(0, 217, 255, 0.05), transparent);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: rgba(232, 237, 242, 0.45);
 }
 
 .hud-label {
-  color: var(--accent-cyan);
-  font-weight: 600;
+  color: rgba(232, 237, 242, 0.45);
 }
 
 .hud-status {
@@ -48,9 +55,9 @@
   position: relative;
   width: 100%;
   max-width: 380px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(0, 217, 255, 0.22);
+  border-radius: 0;
   padding: var(--space-xl) var(--space-lg) var(--space-lg);
   animation: panel-in 0.4s ease-out;
 }
@@ -65,7 +72,7 @@
   position: absolute;
   width: 14px;
   height: 14px;
-  border-color: var(--accent-cyan-dim);
+  border-color: var(--accent-cyan);
   border-style: solid;
   border-width: 0;
 }
@@ -80,16 +87,18 @@
 }
 
 .login-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
 }
 
 .login-subtitle {
   margin-top: var(--space-xs);
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 0.9rem;
+  color: rgba(232, 237, 242, 0.7);
   letter-spacing: 0.03em;
 }
 
@@ -106,18 +115,20 @@
 }
 
 .field-group label {
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: rgba(232, 237, 242, 0.45);
 }
 
 .field-group input {
-  background: var(--bg-input);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(232, 237, 242, 0.16);
+  border-radius: 0;
   padding: 10px 12px;
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -142,11 +153,12 @@
 .btn-login {
   margin-top: var(--space-sm);
   background: var(--accent-cyan);
-  color: #04202A;
+  color: #041016;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   padding: 12px;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -169,8 +181,9 @@
 .login-footer {
   margin-top: var(--space-lg);
   text-align: center;
-  font-size: 10px;
-  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: rgba(232, 237, 242, 0.45);
   letter-spacing: 0.05em;
 }
 
