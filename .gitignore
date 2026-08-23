@@ -11,3 +11,6 @@ Thumbs.db
 .vs/
 .vscode/
 *.suo
+
+
+**/.env
