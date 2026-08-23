@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using CockpitSim.Services;
 
@@ -81,6 +82,16 @@ if (!app.Environment.IsDevelopment())
 app.UseCors("AllowLocalhost");
 
 // Enable Authentication & Authorization (MUST come before app.MapControllers)
+var dashboardPath = Path.GetFullPath(
+      Path.Combine(builder.Environment.ContentRootPath, "..",
+      "..", "dashboard"));
+
+  app.UseStaticFiles(new StaticFileOptions
+  {
+      FileProvider = new PhysicalFileProvider(dashboardPath),
+      RequestPath = "/dashboard"
+  });
+  
 app.UseAuthentication();
 app.UseAuthorization();
 
