@@ -3,9 +3,6 @@
 <meta charset="UTF-8">
 <meta name= "viewport" content="width=device-width, initial scale=1.0">
 <title>CockpitSim - Trainee Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel = "stylesheet" href = "../shared/css/main.css">
 <link rel = "stylesheet" href = "pre-session.css">
 </head>
@@ -20,10 +17,6 @@
     <div class="hud-item hud-center">
       <span class="hud-label">STATUS</span>
       <span class="hud-value hud-status" id="hud-status">STANDBY</span>
-    </div>
-    <div class="hud-item hud-right">
-      <span class="hud-label">LOCAL TIME</span>
-      <span class="hud-value" id="hud-time">--:--:--</span>
     </div>
   </header>
 
@@ -121,6 +114,8 @@
  
   </main>
  
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/auth.js"></script>
   <script src="pre-session.js"></script>
 </body>
 </html>

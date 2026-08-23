@@ -1,5 +1,12 @@
+// CockpitSim — Trainer Dashboard
+// Guard: trainers (and admins previewing) only.
+const session = requireRole(['trainer', 'admin']);
+
+if (session) {
+	// TODO: replace hardcoded username once backend supplies the profile.
+	document.getElementById('hud-username').textContent = session.username.toUpperCase();
+
 const ANALYTICS = [
-	{ label: 'Active trainees', value: '4', delta: '+1 vs yesterday' },
 	{ label: 'Pass rate', value: '82%', delta: '+6%' },
 	{ label: 'Avg score', value: '87', delta: '+4 points' },
 	{ label: 'Pending reviews', value: '3', delta: '2 urgent' },
@@ -81,16 +88,18 @@ const TREND_BARS = [68, 72, 74, 80, 83, 87];
 
 let selectedTraineeId = TRAINEES[0].id;
 
-function tickClock() {
-	const el = document.getElementById('hud-time');
-	el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
-}
-
 function renderAnalytics() {
 	const container = document.getElementById('analytics-cards');
 	container.innerHTML = '';
 
-	ANALYTICS.forEach((item) => {
+	// TODO: replace with API data once sessions/telemetry are wired.
+	// Derived from roster length so it always matches actual trainees.
+	const analytics = [
+		{ label: 'Active trainees', value: String(TRAINEES.length), delta: `${TRAINEES.length} assigned to you` },
+		...ANALYTICS,
+	];
+
+	analytics.forEach((item) => {
 		const block = document.createElement('article');
 		block.className = 'metric-card';
 		block.innerHTML = `
@@ -243,6 +252,7 @@ function bindFeedbackButton() {
 function bindLogoutButton() {
 	const button = document.getElementById('logout-btn');
 	button.addEventListener('click', () => {
+		clearSession();
 		window.location.href = '../login/login.html';
 	});
 }
@@ -254,6 +264,5 @@ document.addEventListener('DOMContentLoaded', () => {
 	renderSessions();
 	bindFeedbackButton();
 	bindLogoutButton();
-	tickClock();
-	setInterval(tickClock, 1000);
 });
+}

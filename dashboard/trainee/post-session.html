@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CockpitSim - Trainee Post Session</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/css/main.css">
   <link rel="stylesheet" href="post-session.css">
 </head>
@@ -20,10 +17,6 @@
       <div class="hud-item hud-center">
         <span class="hud-label">STATUS</span>
         <span class="hud-value hud-status" id="hud-status">POST-SESSION REPORT</span>
-      </div>
-      <div class="hud-item hud-right">
-        <span class="hud-label">LOCAL TIME</span>
-        <span class="hud-value" id="hud-time">--:--:--</span>
       </div>
     </header>
 
@@ -99,12 +92,14 @@
         <p class="action-copy" id="action-copy">Review the full session report before starting the next attempt.</p>
         <div class="action-row">
           <a class="action-link action-primary" href="./pre-session.html">Run another session</a>
-          <a class="action-link" href="../role-select/role-select.html">Return to role select</a>
+          <a class="action-link" href="../login/login.html">Log out</a>
         </div>
       </section>
     </main>
   </div>
 
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/auth.js"></script>
   <script src="post-session.js"></script>
 </body>
 </html>

@@ -1,3 +1,7 @@
+// CockpitSim — Trainee Post-Session Report
+// Guard: trainees (and admins previewing) only.
+const session = requireRole(['trainee', 'admin']);
+
 const SUMMARY_CARDS = [
   { label: "Flight time", value: "24 min 18 sec", delta: "+3 min vs last attempt" },
   { label: "Completion", value: "100%", delta: "All required maneuvers captured" },
@@ -26,11 +30,6 @@ const TIMELINE = [
   { time: "16:12", event: "One brief airspeed deviation logged, no intervention needed." },
   { time: "24:18", event: "Landing completed and report finalized." },
 ];
-
-function tickClock() {
-  const el = document.getElementById("hud-time");
-  el.textContent = new Date().toLocaleTimeString("en-GB", { hour12: false });
-}
 
 function renderSummaryCards() {
   const container = document.getElementById("summary-cards");
@@ -92,6 +91,4 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTelemetry();
   renderNotes();
   renderTimeline();
-  tickClock();
-  setInterval(tickClock, 1000);
 });

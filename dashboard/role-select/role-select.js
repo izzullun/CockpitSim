@@ -1,30 +1,33 @@
 // CockpitSim — Role Select page
-// STATUS: confirmation screen after login. Per team decision, this page is
-// mainly for admin accounts / dev-testing convenience — trainee and trainer
-// accounts should eventually skip this and go straight to their dashboard
-// once login.js reads the role back from the backend (see login.js TODOs).
+// Post-login confirmation screen for ADMIN accounts and dev-testing only.
+// Trainee/trainer accounts never see this page — login.js routes them
+// straight to their dashboard using the role from the backend.
 
-// TODO: trainee and trainer dashboards will eventually diverge further.
-// For now, the trainee path is live and the trainer path goes to the trainer dashboard.
+// Guard: admins only. Everyone else bounces to login.
+const session = requireRole(['admin']);
+
 const TRAINEE_DESTINATION = '../trainee/pre-session.html';
 const TRAINER_DESTINATION = '../trainer/trainer-dashboard.html';
 
-document.querySelectorAll('.role-card').forEach((card) => {
-  card.addEventListener('click', () => {
-    const role = card.dataset.role;
+if (session) {
+  document.getElementById('welcome-text').textContent =
+    `Logged in as ${session.fullName} — choose which dashboard to enter`;
 
-    console.log('[role-select.js] Role chosen (shell only):', role);
+  document.querySelectorAll('.role-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const role = card.dataset.role;
 
-    if (role === 'trainee') {
-      window.location.href = TRAINEE_DESTINATION;
-      return;
-    }
+      if (role === 'trainee') {
+        window.location.href = TRAINEE_DESTINATION;
+        return;
+      }
 
-    if (role === 'trainer') {
-      window.location.href = TRAINER_DESTINATION;
-      return;
-    }
+      if (role === 'trainer') {
+        window.location.href = TRAINER_DESTINATION;
+        return;
+      }
 
-    alert('Unknown role selected.');
+      alert('Unknown role selected.');
+    });
   });
-});
+}

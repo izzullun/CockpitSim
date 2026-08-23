@@ -12,6 +12,11 @@
 //   Launcher API: POST /msfs/launch, then poll GET /session/status.
 // ==========================================================================
 
+// Guard: trainees (and admins previewing) only.
+const session = requireRole(['trainee', 'admin']);
+
+if (session) {
+
 const DUMMY_PROFILE = {
   fullName: "Adam Haikal",
   role: "Trainee",
@@ -36,7 +41,9 @@ function renderProfile(profile) {
   document.getElementById("profile-name").textContent = profile.fullName;
   document.getElementById("profile-role").textContent = profile.role;
   document.getElementById("profile-trainer").textContent = profile.assignedTrainer;
-  document.getElementById("profile-last-login").textContent = profile.lastLogin;
+
+  // TODO: lastLogin should come from the backend profile once wired.
+  document.getElementById("profile-last-login").textContent = profile.lastLogin || "—";
 
   const hudName = profile.fullName.toUpperCase().replace(/\s+/g, "_");
   document.getElementById("hud-username").textContent = hudName;
@@ -92,12 +99,6 @@ function renderHistory(history) {
   });
 }
 
-function tickClock() {
-  const el = document.getElementById("hud-time");
-  const now = new Date();
-  el.textContent = now.toLocaleTimeString("en-GB", { hour12: false });
-}
-
 let launchInProgress = false;
 let handoffTimer = null;
 
@@ -130,12 +131,16 @@ function startSession() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderProfile(DUMMY_PROFILE);
+  // Profile comes from the login session; trainer name stays dummy for now.
+  renderProfile({
+    fullName: session.fullName,
+    role: "Trainee",
+    assignedTrainer: DUMMY_PROFILE.assignedTrainer,
+    lastLogin: null,
+  });
   renderUpcoming(DUMMY_UPCOMING);
   renderHistory(DUMMY_HISTORY);
 
-  tickClock();
-  setInterval(tickClock, 1000);
-
   document.getElementById("btn-start-session").addEventListener("click", startSession);
 });
+}
