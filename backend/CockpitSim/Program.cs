@@ -71,7 +71,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirect only outside Development — the local dashboard (Live Server,
+// plain HTTP) calls the HTTP port directly during development.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable CORS
 app.UseCors("AllowLocalhost");

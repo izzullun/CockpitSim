@@ -1,24 +1,9 @@
-const TOKEN_STORAGE_KEY = 'cockpitSim.jwt';
-const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-
-function decodeJwtPayload(token) {
-  const payloadSegment = token.split('.')[1];
-
-  if (!payloadSegment) {
-    throw new Error('Invalid token payload.');
-  }
-
-  const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
-  const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-  const bytes = Uint8Array.from(atob(paddedBase64), (character) => character.charCodeAt(0));
-
-  return JSON.parse(new TextDecoder().decode(bytes));
-}
-
-function showError(errorEl, message) {
-  errorEl.textContent = message;
-  errorEl.hidden = false;
-}
+// CockpitSim — Login page
+// Calls POST /api/auth/login and routes by the role the backend returns:
+//   - trainee  -> pre-session
+//   - trainer  -> trainer dashboard
+//   - admin    -> role-select (dev/testing convenience)
+// Role-select is NOT part of the normal trainee/trainer flow.
 
 document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -30,47 +15,37 @@ document.getElementById('login-form').addEventListener('submit', async function 
   errorEl.hidden = true;
 
   if (!username || !password) {
-    showError(errorEl, 'Enter both username and password.');
+    errorEl.textContent = 'Enter both username and password.';
+    errorEl.hidden = false;
     return;
   }
 
   try {
-    const response = await fetch('/api/auth/login', {
+    const { ok, data } = await apiRequest('/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: { username, password },
     });
-    const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      showError(errorEl, data.message || 'Invalid username or password.');
+    if (!ok) {
+      errorEl.textContent = (data && data.message) || 'Invalid username or password.';
+      errorEl.hidden = false;
       return;
     }
 
-    if (typeof data.token !== 'string' || !data.token) {
-      throw new Error('The server did not return a valid login token.');
-    }
+    localStorage.setItem('cockpitSim.jwt', data.token);
+    saveSession(data);
 
-    const payload = decodeJwtPayload(data.token);
-    const role = String(payload[ROLE_CLAIM] || '').toLowerCase();
-
-    sessionStorage.setItem(TOKEN_STORAGE_KEY, data.token);
-
-    // TODO: role-select is intentionally bypassed here and may be reinserted
-    // into the redirect flow later for admin or role-confirmation workflows.
-    if (role === 'trainee') {
+    // Role-based branching (decided flow — see AGENTS.md).
+    if (data.role === 'trainee') {
       window.location.href = '../trainee/pre-session.html';
-      return;
-    }
-
-    if (role === 'trainer') {
+    } else if (data.role === 'trainer') {
       window.location.href = '../trainer/trainer-dashboard.html';
-      return;
+    } else {
+      window.location.href = '../role-select/role-select.html';
     }
-
-    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-    showError(errorEl, 'Your account role does not have a dashboard entry point yet.');
-  } catch (error) {
-    showError(errorEl, error.message || 'Unable to sign in. Please try again.');
+  } catch (err) {
+    console.error('[login.js] Login request failed:', err);
+    errorEl.textContent = 'Cannot reach the server. Is the backend running?';
+    errorEl.hidden = false;
   }
 });

@@ -1,28 +1,30 @@
-(function (global) {
-  const TOKEN_STORAGE_KEY = 'cockpitSim.jwt';
+// CockpitSim — Shared API helper
+// All frontend-to-backend calls go through here so the base URL and
+// auth header handling stay in one place.
 
-  function getToken() {
-    return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+// TODO: move to a config file when the backend gets a fixed deploy URL.
+const API_BASE_URL = 'http://localhost:5247/api';
+
+async function apiRequest(path, { method = 'GET', body = null, auth = false } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+
+  if (auth) {
+    const token = localStorage.getItem('cockpitSim.jwt');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
   }
 
-  function withAuthorization(options = {}) {
-    const headers = new Headers(options.headers || {});
-    const token = getToken();
-
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    return { ...options, headers };
-  }
-
-  function fetchProtected(input, options) {
-    return fetch(input, withAuthorization(options));
-  }
-
-  global.CockpitSimApi = Object.freeze({
-    getToken,
-    withAuthorization,
-    fetchProtected,
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null,
   });
-})(window);
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Non-JSON response body — leave data as null.
+  }
+
+  return { ok: response.ok, status: response.status, data };
+}
