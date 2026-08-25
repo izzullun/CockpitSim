@@ -1,0 +1,107 @@
+/* CockpitSim — Logout confirmation modal
+   Shared across dashboard pages; uses main.css design tokens only. */
+
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(6, 9, 14, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.logout-overlay.is-visible {
+  display: flex;
+}
+
+.logout-modal {
+  position: relative;
+  width: min(380px, calc(100vw - var(--space-xl)));
+  padding: var(--space-lg);
+  background-color: var(--bg-panel-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 var(--space-lg) var(--accent-cyan-glow);
+  animation: logout-modal-in 120ms ease-out;
+}
+
+@keyframes logout-modal-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Corner accents matching other cockpit panels */
+.logout-modal::before,
+.logout-modal::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--accent-cyan);
+  border-style: solid;
+}
+
+.logout-modal::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+
+.logout-modal::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+.logout-modal-title {
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+}
+
+.logout-modal-text {
+  margin-top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+}
+
+.logout-modal .modal-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+.logout-modal .modal-btn:hover {
+  border-color: var(--accent-cyan-dim);
+  color: var(--accent-cyan);
+}
+
+.logout-modal .modal-btn-danger {
+  background-color: rgba(255, 71, 87, 0.12);
+  border-color: rgba(255, 71, 87, 0.5);
+  color: var(--status-error);
+}
+
+.logout-modal .modal-btn-danger:hover {
+  background-color: rgba(255, 71, 87, 0.22);
+  border-color: var(--status-error);
+  color: var(--status-error);
+}

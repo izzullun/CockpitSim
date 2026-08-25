@@ -142,5 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderHistory(DUMMY_HISTORY);
 
   document.getElementById("btn-start-session").addEventListener("click", startSession);
+
+  initLogoutConfirm();
 });
 }
