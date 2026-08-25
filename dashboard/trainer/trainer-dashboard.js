@@ -250,11 +250,7 @@ function bindFeedbackButton() {
 }
 
 function bindLogoutButton() {
-	const button = document.getElementById('logout-btn');
-	button.addEventListener('click', () => {
-		clearSession();
-		window.location.href = '../login/login.html';
-	});
+	initLogoutConfirm();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

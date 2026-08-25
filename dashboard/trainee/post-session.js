@@ -92,8 +92,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderNotes();
   renderTimeline();
 
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    clearSession();
-    window.location.href = "../login/login.html";
-  });
+  initLogoutConfirm();
 });
