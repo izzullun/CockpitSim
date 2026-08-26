@@ -2,6 +2,8 @@
 bin/
 obj/
 *.user
+*.db-shm
+*.db-wal
 
 # OS junk
 .DS_Store

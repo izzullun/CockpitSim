@@ -1,15 +1,14 @@
 // ==========================================================================
-// Trainee Dashboard — Pre-Session View
-// UI shell only, driven by dummy data. No live backend calls yet.
-//
-// TODO (Member 3 — Backend API ready):
-//   Replace DUMMY_PROFILE / DUMMY_UPCOMING / DUMMY_HISTORY with a call to
-//   GET /dashboard (JWT-gated), which returns profile + assigned trainer +
-//   session history for the logged-in trainee.
+// CockpitSim — Trainee Pre-Session View
+// Live data: profile + session history come from the backend (/api/me,
+// /api/me/sessions) via shared/js/api.js.
 //
 // TODO (Member 4 — WPF Launcher / Launcher API ready):
 //   Replace the startSession() stub with a real local HTTP call to the
 //   Launcher API: POST /msfs/launch, then poll GET /session/status.
+//
+// TODO (scheduling feature): the "upcoming session" panel still shows dummy
+//   data — no session-scheduling API exists yet.
 // ==========================================================================
 
 // Guard: trainees (and admins previewing) only.
@@ -17,13 +16,7 @@ const session = requireRole(['trainee', 'admin']);
 
 if (session) {
 
-const DUMMY_PROFILE = {
-  fullName: "Adam Haikal",
-  role: "Trainee",
-  assignedTrainer: "Aiman Hakim Redza",
-  lastLogin: "2026-07-12 09:41",
-};
-
+// Dummy until a scheduling API exists.
 const DUMMY_UPCOMING = {
   exercise: "Autorotation Recovery — Attempt 4",
   scheduled: "2026-07-21 14:00",
@@ -31,18 +24,11 @@ const DUMMY_UPCOMING = {
   notes: "Focus on collective timing during flare. Trainer notes from last attempt available below.",
 };
 
-const DUMMY_HISTORY = [
-  { attempt: 3, date: "2026-07-14", duration: "22 min", outcome: "success", feedback: "Good flare timing." },
-  { attempt: 2, date: "2026-07-10", duration: "19 min", outcome: "failed",  feedback: "Collective input too late." },
-  { attempt: 1, date: "2026-07-05", duration: "17 min", outcome: "failed",  feedback: "Lost rotor RPM on entry." },
-];
-
 function renderProfile(profile) {
   document.getElementById("profile-name").textContent = profile.fullName;
   document.getElementById("profile-role").textContent = profile.role;
   document.getElementById("profile-trainer").textContent = profile.assignedTrainer;
 
-  // TODO: lastLogin should come from the backend profile once wired.
   document.getElementById("profile-last-login").textContent = profile.lastLogin || "—";
 
   const hudName = profile.fullName.toUpperCase().replace(/\s+/g, "_");
@@ -99,6 +85,52 @@ function renderHistory(history) {
   });
 }
 
+// Map one backend session record to a history-table row.
+function toHistoryEntry(s) {
+  const started = parseDbDate(s.startedAt);
+  let duration = "—";
+  if (s.endedAt) {
+    const minutes = Math.round((parseDbDate(s.endedAt) - started) / 60000);
+    duration = `${minutes} min`;
+  }
+
+  // TODO: surface the trainer's note text here once an endpoint exposes
+  // notes to the trainee (currently trainer-only).
+  const outcome = s.status === "completed" ? "success"
+    : s.status === "cancelled" ? "failed"
+    : "pending";
+
+  return {
+    attempt: s.attempt,
+    date: started.toISOString().slice(0, 10),
+    duration,
+    outcome,
+    feedback: ""
+  };
+}
+
+async function loadLiveSection() {
+  // Profile — replaces the old DUMMY_PROFILE block.
+  const meRes = await apiRequest("/me", { auth: true });
+  if (meRes.ok && meRes.data) {
+    const me = meRes.data;
+    renderProfile({
+      fullName: me.fullName,
+      role: "Trainee",
+      assignedTrainer: me.assignedTrainerName || "Unassigned",
+      lastLogin: me.lastLoginAt
+        ? parseDbDate(me.lastLoginAt).toLocaleString("en-GB", { hour12: false })
+        : null,
+    });
+  }
+
+  // Session history — replaces DUMMY_HISTORY.
+  const sessRes = await apiRequest("/me/sessions", { auth: true });
+  if (sessRes.ok && Array.isArray(sessRes.data)) {
+    renderHistory(sessRes.data.map(toHistoryEntry).reverse());
+  }
+}
+
 let launchInProgress = false;
 let handoffTimer = null;
 
@@ -131,15 +163,8 @@ function startSession() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Profile comes from the login session; trainer name stays dummy for now.
-  renderProfile({
-    fullName: session.fullName,
-    role: "Trainee",
-    assignedTrainer: DUMMY_PROFILE.assignedTrainer,
-    lastLogin: null,
-  });
+  loadLiveSection();
   renderUpcoming(DUMMY_UPCOMING);
-  renderHistory(DUMMY_HISTORY);
 
   document.getElementById("btn-start-session").addEventListener("click", startSession);
 

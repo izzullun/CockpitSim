@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using CockpitSim.Models;
+using CockpitSim.Data;
 
 namespace CockpitSim.Services; // <-- CRITICAL: Tells C# this belongs to CockpitSim.Services
 
@@ -15,18 +15,18 @@ public class JwtTokenService : IJwtTokenService
         _config = config;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(ApplicationUser user, string role)
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, user.Role.ToLower()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim(ClaimTypes.Role, role.ToLowerInvariant()),
         };
 
-        if (user.AssignedTrainerId.HasValue)
+        if (!string.IsNullOrEmpty(user.AssignedTrainerId))
         {
-            claims.Add(new Claim("AssignedTrainerId", user.AssignedTrainerId.Value.ToString()));
+            claims.Add(new Claim("AssignedTrainerId", user.AssignedTrainerId));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));

@@ -1,7 +1,10 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using CockpitSim.Data;
 using CockpitSim.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +15,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add Web API Controller support (Routes to Controllers/AuthController.cs)
 builder.Services.AddControllers();
+
+// Register the database (SQLite for now — swap to Pomelo MySQL later;
+// only this registration and the connection string change).
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register ASP.NET Core Identity backed by the DbContext.
+// IdentityCore (no cookies) — auth is JWT-only via the Bearer scheme below.
+// Password rules relaxed so simple demo credentials work in Development.
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.Password.RequireDigit = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 8;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add Swagger UI (Interactive API testing in browser)
 builder.Services.AddEndpointsApiExplorer();
@@ -54,8 +76,9 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireTrainee", policy => policy.RequireRole("trainee"))
     .AddPolicy("RequireStaff", policy => policy.RequireRole("trainer", "admin"));
 
-// TODO: Member 3 will register MySQL Entity Framework DbContext here:
-// builder.Services.AddDbContext<AppDbContext>(options => ...);
+// TODO (Member 3): swap to Pomelo MySQL for production:
+// options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+
 
 
 // =========================================================
@@ -94,6 +117,18 @@ var dashboardPath = Path.GetFullPath(
   
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Seed roles (lowercase, matching authorization policies) and the demo
+// user roster. Both are idempotent — safe to run on every startup.
+using (var scope = app.Services.CreateScope())
+{
+    await DbInitializer.SeedRolesAsync(scope.ServiceProvider);
+    if (app.Environment.IsDevelopment())
+    {
+        await DbInitializer.SeedUsersAsync(scope.ServiceProvider);
+        await DbInitializer.SeedSessionsAsync(scope.ServiceProvider);
+    }
+}
 
 // Map REST API Controllers
 app.MapControllers();

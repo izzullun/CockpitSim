@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using CockpitSim.Data;
 using CockpitSim.DTOs;
-using CockpitSim.Models;
 using CockpitSim.Services;
 
 namespace CockpitSim.Controllers;
@@ -9,82 +10,57 @@ namespace CockpitSim.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IJwtTokenService _jwtService;
 
-    // Temporary mock data matching your CockpitSim user schema for local testing
-    private static readonly List<User> _mockUsers = new()
+    public AuthController(UserManager<ApplicationUser> userManager, IJwtTokenService jwtService)
     {
-        new User
-        {
-            UserId = 1,
-            Username = "trainer_lim",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
-            FullName = "Lim Wei Jian",
-            Role = "trainer",
-            AssignedTrainerId = null
-        },
-        new User
-        {
-            UserId = 2,
-            Username = "trainee_adam",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
-            FullName = "Adam Haikal",
-            Role = "trainee",
-            AssignedTrainerId = 1
-        },
-        new User
-        {
-            UserId = 3,
-            Username = "trainee_siti",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
-            FullName = "Siti Nur",
-            Role = "trainee",
-            AssignedTrainerId = 1
-        }
-    };
-
-    public AuthController(IJwtTokenService jwtService)
-    {
+        _userManager = userManager;
         _jwtService = jwtService;
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequestDto request)
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest(new { message = "Username and password are required." });
         }
 
-        // 1. Fetch user from mock list
-        var user = _mockUsers.FirstOrDefault(u => u.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase));
-        
+        // 1. Fetch user from the database (FindByNameAsync normalizes, so the
+        //    lookup is case-insensitive like the old mock behaviour).
+        var user = await _userManager.FindByNameAsync(request.Username);
+
         if (user == null)
         {
             return Unauthorized(new { message = "Invalid username or password." });
         }
 
-        // 2. Verify hashed password (BCrypt)
-        bool isValidPassword = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+        // 2. Verify hashed password via Identity (PBKDF2).
+        bool isValidPassword = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!isValidPassword)
         {
             return Unauthorized(new { message = "Invalid username or password." });
         }
 
-        // 3. Generate JWT
-        var token = _jwtService.GenerateToken(user);
+        // 3. Resolve role from Identity roles (seeded lowercase).
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? string.Empty;
 
-        // 4. Update last_login timestamp
-        user.LastLogin = DateTime.UtcNow;
+        // 4. Stamp last login.
+        user.LastLoginAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
 
-        // 5. Return JWT + basic profile info
+        // 5. Generate JWT + return basic profile info.
+        var token = _jwtService.GenerateToken(user, role);
+
         return Ok(new AuthResponseDto
         {
             Token = token,
-            UserId = user.UserId,
-            Username = user.Username,
+            UserId = user.Id,
+            Username = user.UserName ?? string.Empty,
             FullName = user.FullName,
-            Role = user.Role,
+            Role = role,
             AssignedTrainerId = user.AssignedTrainerId
         });
     }

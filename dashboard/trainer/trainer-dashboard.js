@@ -1,102 +1,102 @@
+// ==========================================================================
 // CockpitSim — Trainer Dashboard
+// Live data: roster + session queue from /api/sessions/queue, feedback via
+// /api/trainees/{id}/notes and /api/sessions/{id}/feedback (trainer-only).
+//
+// TODO (SimConnect/telemetry pipeline): liveStats (altitude/airspeed/RPM),
+//   warnings, riskLevel and liveScore have no backend source yet — they show
+//   neutral placeholders until the launcher streams telemetry.
+// TODO: trend bars remain illustrative until historical metrics exist.
+// ==========================================================================
+
 // Guard: trainers (and admins previewing) only.
 const session = requireRole(['trainer', 'admin']);
 
 if (session) {
-	// TODO: replace hardcoded username once backend supplies the profile.
 	document.getElementById('hud-username').textContent = session.username.toUpperCase();
 
-const ANALYTICS = [
-	{ label: 'Pass rate', value: '82%', delta: '+6%' },
-	{ label: 'Avg score', value: '87', delta: '+4 points' },
-	{ label: 'Pending reviews', value: '3', delta: '2 urgent' },
-];
+let QUEUE = [];            // raw queue rows from the API
+let TRAINTEES = [];        // roster derived from the queue
+let selectedTraineeId = null;
+const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note}]
 
-const TRAINEES = [
-	{
-		id: 1,
-		fullName: 'Adam Haikal',
-		callsign: 'TRAINEE_ADAM',
-		status: 'In session',
-		sessionState: 'Active',
-		currentExercise: 'Autorotation Recovery',
-		liveScore: '87',
-		riskLevel: 'Low',
-		lastTelemetryAt: '00:02 ago',
-		pendingNotesCount: 1,
-		connectionState: 'Online',
-		warnings: ['Flare timing needs smoothing', 'Rotor RPM stable'],
-		monitoring: { altitude: '1,820 ft', airspeed: '74 kt', heading: '271°', verticalSpeed: '-820 ft/min', rotorRpm: '97%' },
-		sessionStateLabel: 'Live',
-		actionLabels: ['Review', 'Monitor'],
-	},
-	{
-		id: 2,
-		fullName: 'Siti Nur',
-		callsign: 'TRAINEE_SITI',
-		status: 'Ready for review',
-		sessionState: 'Waiting',
-		currentExercise: 'Hover Hold',
-		liveScore: '91',
-		riskLevel: 'Low',
-		lastTelemetryAt: '05:11 ago',
-		pendingNotesCount: 2,
-		connectionState: 'Standby',
-		warnings: ['Good heading control', 'No active warnings'],
-		monitoring: { altitude: '920 ft', airspeed: '18 kt', heading: '183°', verticalSpeed: '0 ft/min', rotorRpm: '95%' },
-		sessionStateLabel: 'Ready',
-		actionLabels: ['Assign', 'Open'],
-	},
-	{
-		id: 3,
-		fullName: 'Faiz Rahman',
-		callsign: 'TRAINEE_FAIZ',
-		status: 'Needs attention',
-		sessionState: 'Paused',
-		currentExercise: 'Emergency Landing',
-		liveScore: '72',
-		riskLevel: 'High',
-		lastTelemetryAt: '01:28 ago',
-		pendingNotesCount: 4,
-		connectionState: 'Online',
-		warnings: ['Altitude deviation', 'Late collective response'],
-		monitoring: { altitude: '1,140 ft', airspeed: '52 kt', heading: '309°', verticalSpeed: '-1,150 ft/min', rotorRpm: '89%' },
-		sessionStateLabel: 'Paused',
-		actionLabels: ['Resume', 'Review'],
-	},
-];
-
-const SESSION_QUEUE = [
-	{ trainee: 'Adam Haikal', exercise: 'Autorotation Recovery', state: 'Live', action: 'Monitor' },
-	{ trainee: 'Siti Nur', exercise: 'Hover Hold', state: 'Ready', action: 'Assign' },
-	{ trainee: 'Faiz Rahman', exercise: 'Emergency Landing', state: 'Paused', action: 'Resume' },
-];
-
-const FEEDBACK_BY_TRAINEE = {
-	1: [
-		{ author: 'Trainer Lim', time: '16:22', note: 'Good job on the recovery profile, but keep the flare smoother.' },
-	],
-	2: [
-		{ author: 'Trainer Lim', time: '15:58', note: 'Siti is stable. Push the hover hold duration on the next attempt.' },
-	],
-	3: [
-		{ author: 'Trainer Lim', time: '15:30', note: 'Faiz needs one-on-one review after repeated descent warnings.' },
-	],
+// Neutral placeholders until telemetry streaming exists.
+const PLACEHOLDER_MONITORING = {
+	altitude: '—', airspeed: '—', heading: '—', verticalSpeed: '—', rotorRpm: '—'
 };
 
-const TREND_BARS = [68, 72, 74, 80, 83, 87];
+function statusLabelFor(sessions) {
+	if (sessions.some((item) => item.status === 'in_progress')) return 'In session';
+	const latest = sessions[0];
+	if (!latest) return 'No sessions';
+	if (latest.status === 'completed') return 'Ready for review';
+	if (latest.status === 'scheduled') return 'Scheduled';
+	return 'Needs attention';
+}
 
-let selectedTraineeId = TRAINEES[0].id;
+function pillClass(status) {
+	if (status === 'In session') return 'pill-ok';
+	if (status === 'Needs attention') return 'pill-error';
+	return 'pill-warn';
+}
+
+function stateLabelFor(status) {
+	if (status === 'in_progress') return 'Live';
+	if (status === 'completed') return 'Ready';
+	if (status === 'scheduled') return 'Scheduled';
+	return 'Paused';
+}
+
+function relativeTime(iso) {
+	const minutes = Math.max(0, Math.round((Date.now() - parseDbDate(iso).getTime()) / 60000));
+	if (minutes < 1) return 'just now';
+	if (minutes < 60) return `${minutes} min ago`;
+	const hours = Math.floor(minutes / 60);
+	return `${hours}h ${minutes % 60}m ago`;
+}
+
+// Build the per-trainee roster from raw queue rows.
+function buildRoster() {
+	const byTrainee = new Map();
+
+	QUEUE.forEach((item) => {
+		if (!byTrainee.has(item.traineeId)) byTrainee.set(item.traineeId, []);
+		byTrainee.get(item.traineeId).push(item);
+	});
+
+	// API returns newest first, so sessions[0] is the latest.
+	for (const [traineeId, sessions] of byTrainee) {
+		const latest = sessions[0];
+
+		TRAINTEES.push({
+			id: traineeId,
+			fullName: latest.traineeFullName,
+			callsign: latest.traineeUsername.toUpperCase(),
+			status: statusLabelFor(sessions),
+			currentExercise: latest.scenario || 'Unassigned exercise',
+			lastActiveAt: latest.startedAt,
+			sessionStateLabel: stateLabelFor(latest.status),
+			monitoring: { ...PLACEHOLDER_MONITORING },
+			warnings: ['Telemetry stream not connected yet'],
+			riskLevel: 'Low',
+		});
+	}
+}
 
 function renderAnalytics() {
 	const container = document.getElementById('analytics-cards');
 	container.innerHTML = '';
 
-	// TODO: replace with API data once sessions/telemetry are wired.
-	// Derived from roster length so it always matches actual trainees.
+	// Real figures derived from the queue; the rest stay placeholder.
+	const completed = QUEUE.filter((item) => item.status === 'completed').length;
+	const passRate = QUEUE.length > 0 ? Math.round((completed / QUEUE.length) * 100) : 0;
+
+	// TODO: avg score needs a scoring backend; pending reviews needs a review workflow.
 	const analytics = [
-		{ label: 'Active trainees', value: String(TRAINEES.length), delta: `${TRAINEES.length} assigned to you` },
-		...ANALYTICS,
+		{ label: 'Active trainees', value: String(TRAINTEES.length), delta: `${TRAINTEES.length} assigned to you` },
+		{ label: 'Pass rate', value: `${passRate}%`, delta: `${completed}/${QUEUE.length} sessions` },
+		{ label: 'Avg score', value: '—', delta: 'scoring backend pending' },
+		{ label: 'Pending reviews', value: '—', delta: 'review workflow pending' },
 	];
 
 	analytics.forEach((item) => {
@@ -110,6 +110,8 @@ function renderAnalytics() {
 		container.appendChild(block);
 	});
 
+	// TODO: replace with real weekly trend once historical metrics exist.
+	const TREND_BARS = [68, 72, 74, 80, 83, 87];
 	const trendBars = document.getElementById('trend-bars');
 	trendBars.innerHTML = '';
 
@@ -122,17 +124,11 @@ function renderAnalytics() {
 	});
 }
 
-function traineePillClass(status) {
-	if (status === 'In session') return 'pill-ok';
-	if (status === 'Needs attention') return 'pill-error';
-	return 'pill-warn';
-}
-
 function renderRoster() {
 	const roster = document.getElementById('trainee-roster');
 	roster.innerHTML = '';
 
-	TRAINEES.forEach((trainee) => {
+	TRAINTEES.forEach((trainee) => {
 		const row = document.createElement('button');
 		row.type = 'button';
 		row.className = `trainee-row${trainee.id === selectedTraineeId ? ' is-selected' : ''}`;
@@ -140,9 +136,9 @@ function renderRoster() {
 		row.innerHTML = `
 			<div>
 				<div class="trainee-name">${trainee.fullName}</div>
-				<div class="trainee-meta">${trainee.callsign} • ${trainee.currentExercise}<br>${trainee.lastTelemetryAt} • ${trainee.pendingNotesCount} pending notes</div>
+				<div class="trainee-meta">${trainee.callsign} • ${trainee.currentExercise}<br>${relativeTime(trainee.lastActiveAt)}</div>
 			</div>
-			<span class="trainee-pill ${traineePillClass(trainee.status)}">${trainee.status}</span>
+			<span class="trainee-pill ${pillClass(trainee.status)}">${trainee.status}</span>
 		`;
 		row.addEventListener('click', () => {
 			selectedTraineeId = trainee.id;
@@ -154,10 +150,12 @@ function renderRoster() {
 }
 
 function renderLiveMonitor() {
-	const trainee = TRAINEES.find((item) => item.id === selectedTraineeId) || TRAINEES[0];
+	const trainee = TRAINTEES.find((item) => item.id === selectedTraineeId)
+		|| TRAINTEES[0]
+		|| { fullName: 'No trainees assigned', currentExercise: '—', sessionStateLabel: '—', monitoring: PLACEHOLDER_MONITORING, warnings: [], riskLevel: 'Low' };
 
 	document.getElementById('live-trainee-name').textContent = trainee.fullName;
-	document.getElementById('live-trainee-meta').textContent = `${trainee.currentExercise} • ${trainee.sessionState} • ${trainee.connectionState}`;
+	document.getElementById('live-trainee-meta').textContent = `${trainee.currentExercise} • ${trainee.sessionStateLabel}`;
 	document.getElementById('feedback-target').textContent = `Selected trainee: ${trainee.fullName}`;
 
 	const liveStats = document.getElementById('live-stats');
@@ -173,45 +171,67 @@ function renderLiveMonitor() {
 	const warnings = document.getElementById('live-warnings');
 	warnings.innerHTML = '';
 
-	trainee.warnings.forEach((warning) => {
+	(trainee.warnings || []).forEach((warning) => {
 		const item = document.createElement('li');
 		item.className = 'warning-item';
-		item.innerHTML = `<strong>${trainee.riskLevel === 'High' ? 'High priority' : 'Info'}</strong>${warning}`;
+		item.innerHTML = `<strong>Info</strong>${warning}`;
 		warnings.appendChild(item);
 	});
 
 	renderFeedback();
 }
 
-function getSelectedTraineeFeedback() {
-	if (!FEEDBACK_BY_TRAINEE[selectedTraineeId]) {
-		FEEDBACK_BY_TRAINEE[selectedTraineeId] = [];
-	}
-
-	return FEEDBACK_BY_TRAINEE[selectedTraineeId];
-}
-
 function renderSessions() {
 	const tbody = document.getElementById('session-body');
 	tbody.innerHTML = '';
 
-	SESSION_QUEUE.forEach((item) => {
+	if (QUEUE.length === 0) {
+		const row = document.createElement('tr');
+		row.innerHTML = `<td colspan="4">No sessions logged for your trainees yet.</td>`;
+		tbody.appendChild(row);
+		return;
+	}
+
+	QUEUE.forEach((item) => {
 		const row = document.createElement('tr');
 		row.innerHTML = `
-			<td>${item.trainee}</td>
-			<td>${item.exercise}</td>
-			<td>${item.state}</td>
-			<td><a class="queue-link" href="#">${item.action}</a></td>
+			<td>${item.traineeFullName}</td>
+			<td>${item.scenario}</td>
+			<td>${stateLabelFor(item.status)}</td>
+			<td><a class="queue-link" href="#">Open</a></td>
 		`;
 		tbody.appendChild(row);
 	});
 }
 
-function renderFeedback() {
+async function ensureNotesLoaded(traineeId) {
+	if (FEEDBACK_CACHE[traineeId]) return;
+
+	const res = await apiRequest(`/trainees/${traineeId}/notes`, { auth: true });
+		FEEDBACK_CACHE[traineeId] = (res.ok && Array.isArray(res.data))
+		? res.data.map((n) => ({
+			author: n.author,
+			time: parseDbDate(n.createdAt).toLocaleTimeString('en-GB', { hour12: false }),
+			note: n.note,
+		}))
+		: [];
+}
+
+async function renderFeedback() {
 	const list = document.getElementById('feedback-stream');
 	list.innerHTML = '';
 
-	const traineeFeedback = getSelectedTraineeFeedback();
+	if (!selectedTraineeId) {
+		const empty = document.createElement('li');
+		empty.className = 'feedback-empty';
+		empty.textContent = 'Select a trainee to view feedback.';
+		list.appendChild(empty);
+		return;
+	}
+
+	await ensureNotesLoaded(selectedTraineeId);
+
+	const traineeFeedback = FEEDBACK_CACHE[selectedTraineeId] || [];
 
 	if (traineeFeedback.length === 0) {
 		const empty = document.createElement('li');
@@ -226,26 +246,39 @@ function renderFeedback() {
 		item.className = 'feedback-item';
 		item.innerHTML = `
 			<div class="feedback-item-head"><span>${entry.author}</span><span>${entry.time}</span></div>
-			<div class="feedback-item-body">${entry.note}</div>
+			<div class="feedback-item-body"></div>
 		`;
+		// textContent avoids injecting anything typed into the note box.
+		item.querySelector('.feedback-item-body').textContent = entry.note;
 		list.appendChild(item);
 	});
 }
 
 function bindFeedbackButton() {
 	const button = document.getElementById('send-feedback-btn');
-	button.addEventListener('click', () => {
+	button.addEventListener('click', async () => {
 		const input = document.getElementById('feedback-input');
 		const text = input.value.trim();
-		if (!text) return;
+		if (!text || !selectedTraineeId) return;
 
-		getSelectedTraineeFeedback().unshift({
-			author: 'Trainer Lim',
-			time: new Date().toLocaleTimeString('en-GB', { hour12: false }),
-			note: text,
+		// Feedback attaches to the selected trainee's most recent session.
+		const newest = QUEUE.find((item) => item.traineeId === selectedTraineeId);
+		if (!newest) return;
+
+		const res = await apiRequest(`/sessions/${newest.sessionId}/feedback`, {
+			method: 'POST',
+			auth: true,
+			body: { note: text },
 		});
+
+		if (!res.ok) {
+			console.error('[trainer] feedback failed', res.status, res.data);
+			return;
+		}
+
+		delete FEEDBACK_CACHE[selectedTraineeId];
 		input.value = '';
-		renderFeedback();
+		await renderFeedback();
 	});
 }
 
@@ -253,11 +286,25 @@ function bindLogoutButton() {
 	initLogoutConfirm();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+async function loadLiveData() {
+	const res = await apiRequest('/sessions/queue', { auth: true });
+	if (!res.ok || !Array.isArray(res.data)) {
+		console.error('[trainer] failed to load session queue', res.status, res.data);
+		return;
+	}
+
+	QUEUE = res.data;
+	buildRoster();
+	selectedTraineeId = TRAINTEES.length > 0 ? TRAINTEES[0].id : null;
+
 	renderAnalytics();
 	renderRoster();
 	renderLiveMonitor();
 	renderSessions();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	loadLiveData();
 	bindFeedbackButton();
 	bindLogoutButton();
 });
