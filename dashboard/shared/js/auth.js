@@ -42,5 +42,18 @@ function requireRole(requiredRoles) {
     window.location.replace('../login/login.html');
     return null;
   }
+
+  // Browsers restore pages from the back/forward cache (bfcache) WITHOUT
+  // re-running scripts, so pressing "Back" after logout would show a stale
+  // dashboard. Re-validate the session whenever the page is revived.
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+
+    const revived = getSession();
+    if (!revived || !requiredRoles.includes(revived.role)) {
+      window.location.replace('../login/login.html');
+    }
+  });
+
   return session;
 }

@@ -5,6 +5,15 @@
 // TODO: move to a config file when the backend gets a fixed deploy URL.
 const API_BASE_URL = 'http://localhost:5247/api';
 
+// Backend timestamps are stored in UTC, but SQLite returns them WITHOUT a
+// timezone suffix, so JS would render them as local wall-clock values (8h off
+// for UTC+8 users). Append 'Z' when no offset is present before parsing.
+function parseDbDate(value) {
+  if (!value) return null;
+  const hasOffset = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(String(value));
+  return new Date(hasOffset ? value : `${value}Z`);
+}
+
 async function apiRequest(path, { method = 'GET', body = null, auth = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
