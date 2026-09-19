@@ -26,19 +26,28 @@ node --check <file.js>
 
 No test suite exists yet. Verify backend changes by calling endpoints via Swagger.
 
-## Demo Accounts (hardcoded mock users)
+## Demo Accounts (seeded in database)
 
-Login currently checks an in-memory list in `Controllers/AuthController.cs` (`_mockUsers`) — **not the database**, even though EF Core Identity scaffolding exists in `Data/`:
+Login is **DB-backed**: `AuthController` verifies credentials via ASP.NET Core Identity (`UserManager<ApplicationUser>`) against SQLite (`ApplicationDbContext`, registered in `Program.cs`). Passwords are PBKDF2-hashed by Identity — never plaintext.
 
-- `trainer_lim` / `password123` → trainer dashboard
-- `trainee_adam` / `password123` → trainee pre-session
-- `trainee_siti` / `password123`
+Seeded by `Data/DbInitializer.cs` (Development only, idempotent — safe on every startup):
 
-Database state: SQLite packages + `ApplicationDbContext` + migration + `Data/app.db` exist, but the **DbContext is NOT registered in Program.cs** and MySQL/Pomelo is the documented production target. Replacing `_mockUsers` with DB-backed auth + user seeding is the known next step — coordinate before restructuring `Data/`.
+- `trainer_azlan` / `Azlan123!` → trainer dashboard
+- `trainer_hakim` / `Hakim123!` → trainer dashboard
+- `trainee_adam` / `Adam123!` → trainee pre-session (assigned: azlan)
+- `trainee_faris` / `Faris123!` (assigned: azlan)
+- `trainee_syafiq` / `Syafiq123!` (assigned: hakim)
+- `trainee_danish` / `Danish123!` (assigned: hakim)
+
+Demo training sessions + notes are also seeded (only when the Sessions table is empty) so dashboards render data on first run.
+
+`Data/app.db` is gitignored — first run regenerates and re-seeds it. To reset demo data: stop the backend, delete `Data/app.db`, restart.
+
+Remaining DB work: swap SQLite → Pomelo MySQL for production (TODO in `Program.cs` — only the registration + connection string change).
 
 ## Auth Flow (decided, do not change casually)
 
-1. Login → `POST /api/auth/login` → returns JWT + profile (userId, username, fullName, role, assignedTrainerId)
+1. Login → `POST /api/auth/login` → returns JWT + profile (userId, username, fullName, role, assignedTrainerId). Other live endpoints: `/api/me`, `/api/sessions`, `/api/trainees`
 2. Frontend stores JWT under localStorage key `cockpitSim.jwt`, profile under `cockpitSim.session`
 3. Routing by role returned by API: trainee → pre-session, trainer → trainer-dashboard, **admin → role-select** (role-select is admin/dev-preview ONLY — trainees/trainers never see it)
 4. Protected pages call `requireRole([...])` from `shared/js/auth.js`. This is a UX gate only — the real guard is `[Authorize]` server-side
@@ -53,7 +62,8 @@ Database state: SQLite packages + `ApplicationDbContext` + migration + `Data/app
 - **Design tokens in `shared/css/main.css` are locked** (`--bg-base: #0A0E14`, `--accent-cyan: #00D9FF`, etc.) — don't alter without approval.
 - **Never rename element IDs** that existing JS references.
 - Dummy data stubs must carry a `// TODO:` marking the integration point — no silent placeholders.
-- Roles are lowercase everywhere (`trainee`, `trainer`, `admin`) — matching the authorization policies in Program.cs.
+- Roles are lowercase everywhere (`trainee`, `trainer`, `admin`) — matching the authorization policies in Program.cs and the seeded Identity roles.
+- `Data/app.db` is a local runtime artifact (gitignored). Delete it + restart the backend to reset/re-seed demo users, sessions, and notes.
 
 ## Git Workflow
 
