@@ -16,10 +16,25 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Web API Controller support (Routes to Controllers/AuthController.cs)
 builder.Services.AddControllers();
 
-// Register the database (SQLite for now — swap to Pomelo MySQL later;
-// only this registration and the connection string change).
+// Register the database. Provider is environment-driven:
+//   Development -> SQLite (local file, zero setup for teammates)
+//   Production  -> MySQL via Pomelo (matches database/mysql/cockpitsim_schema.sql)
+// Connection strings come from appsettings(.{Environment}).json.
+var isDevelopment = builder.Environment.IsDevelopment();
+var connectionString = builder.Configuration.GetConnectionString(
+    isDevelopment ? "DefaultConnection" : "MySqlConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (isDevelopment)
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    }
+});
 
 // Register ASP.NET Core Identity backed by the DbContext.
 // IdentityCore (no cookies) — auth is JWT-only via the Bearer scheme below.
@@ -76,11 +91,6 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireTrainee", policy => policy.RequireRole("trainee"))
     .AddPolicy("RequireStaff", policy => policy.RequireRole("trainer", "admin"));
 
-// TODO (Member 3): swap to Pomelo MySQL for production:
-// options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-
-
-
 // =========================================================
 // 2. MIDDLEWARE PIPELINE
 // =========================================================
@@ -118,10 +128,16 @@ var dashboardPath = Path.GetFullPath(
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Seed roles (lowercase, matching authorization policies) and the demo
-// user roster. Both are idempotent — safe to run on every startup.
+// Apply any pending EF migrations so the schema exists on whichever
+// provider is configured (SQLite dev file or the MySQL database), then
+// seed. This makes first-run on a fresh machine self-provisioning.
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+
+    // Seed roles (lowercase, matching authorization policies) and the demo
+    // user roster. Both are idempotent — safe to run on every startup.
     await DbInitializer.SeedRolesAsync(scope.ServiceProvider);
     if (app.Environment.IsDevelopment())
     {

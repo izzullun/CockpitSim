@@ -43,7 +43,9 @@ Demo training sessions + notes are also seeded (only when the Sessions table is 
 
 `Data/app.db` is gitignored — first run regenerates and re-seeds it. To reset demo data: stop the backend, delete `Data/app.db`, restart.
 
-Remaining DB work: swap SQLite → Pomelo MySQL for production (TODO in `Program.cs` — only the registration + connection string change).
+DB provider is environment-driven (set in `Program.cs`): **Development → SQLite** (`Data/app.db`, zero setup), **Production → MySQL via Pomelo** (conn string `MySqlConnection` in `appsettings.Production.json`, schema reference in `database/mysql/cockpitsim_schema.sql`). Startup calls `Database.MigrateAsync()` so the schema self-provisions on whichever provider is active.
+
+Remaining MySQL work (needs a machine with MySQL + `dotnet ef`): the checked-in migrations are SQLite-flavored (`TEXT`/`INTEGER`, `Sqlite:Autoincrement`) and will NOT run against MySQL. Generate a parallel MySQL migration set (separate migrations folder/assembly via `MigrationsAssembly` or a named `--output-dir`), or apply `database/mysql/cockpitsim_schema.sql` directly for prod and skip EF migrations there. Decide before first prod deploy.
 
 ## Auth Flow (decided, do not change casually)
 
