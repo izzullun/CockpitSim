@@ -1,0 +1,43 @@
+﻿<Window x:Class="CockpitSim.Launcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CockpitSim.Launcher"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="CockpitSim" Height="800" Width="1280"
+        MinHeight="600" MinWidth="960"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A0E14">
+    <Grid>
+        <wv2:WebView2 x:Name="WebView" Visibility="Collapsed" />
+
+        <!-- Shown while the backend health check runs on startup. -->
+        <StackPanel x:Name="StatusPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="CONNECTING TO COCKPITSIM SERVER…"
+                       Foreground="#8A97A8" FontSize="14"
+                       FontFamily="Segoe UI" />
+        </StackPanel>
+
+        <!-- Shown when the backend can't be reached. Colors mirror the
+             dashboard design tokens in dashboard/shared/css/main.css. -->
+        <Border x:Name="ErrorOverlay" Visibility="Collapsed" Background="#0A0E14">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520">
+                <TextBlock Text="CANNOT REACH THE COCKPITSIM SERVER"
+                           Foreground="#00D9FF" FontSize="20" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Make sure the CockpitSim backend service is running, then retry."
+                           Foreground="#8A97A8" FontSize="13" TextWrapping="Wrap"
+                           TextAlignment="Center" Margin="0,16,0,0" />
+                <TextBlock x:Name="ErrorDetail" Foreground="#8A97A8" FontSize="11"
+                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,12,0,0" />
+                <Button Content="RETRY" Click="RetryButton_Click"
+                        Margin="0,28,0,0" Padding="32,10"
+                        Background="Transparent" Foreground="#00D9FF"
+                        BorderBrush="#00D9FF" BorderThickness="1"
+                        FontSize="13" Cursor="Hand" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

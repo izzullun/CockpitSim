@@ -130,6 +130,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Unauthenticated liveness probe — used by the WPF launcher to check the
+// backend is up before navigating, and by the Windows Service install later.
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
+
 // Map REST API Controllers
 app.MapControllers();
 

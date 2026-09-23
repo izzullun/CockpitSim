@@ -1,0 +1,53 @@
+# CockpitSim Launcher
+
+The CockpitSim desktop app. This is what trainees and trainers actually open on
+the PC — instead of typing a website address into a browser, they just
+double-click the CockpitSim icon and the app opens in its own window.
+
+Behind the scenes the app shows the same dashboard website as before, just
+inside a dedicated window. This means any updates made to the dashboard
+automatically appear in the app too — nothing extra to maintain.
+
+## What you need installed
+
+- .NET 8 SDK (the same one the backend uses)
+- The CockpitSim backend must be running, otherwise the app shows a
+  "cannot reach the server" screen with a Retry button
+
+## Run it (while developing)
+
+1. Start the backend first:
+
+   ```
+   dotnet run --project backend/CockpitSim
+   ```
+
+2. Then start the app:
+
+   ```
+   dotnet run --project launcher/CockpitSim.Launcher
+   ```
+
+## Make a shareable version
+
+```
+dotnet publish launcher/CockpitSim.Launcher -c Release
+```
+
+The ready-to-use `CockpitSim.Launcher.exe` ends up in
+`launcher/CockpitSim.Launcher/bin/Release/net8.0-windows/publish/`.
+You can copy that folder to another PC or make a desktop shortcut to it.
+
+## Changing where the app connects
+
+By default the app expects the backend at `http://localhost:5247`. If the
+backend ever runs on a different address or port, edit `appsettings.json`
+(next to the exe) — no need to rebuild the app.
+
+## Notes
+
+- The app remembers your login between launches (you stay signed in like a
+  normal desktop app).
+- When the backend is deployed as a Windows Service on the demo PC, it starts
+  automatically on boot — so the desktop shortcut is the only thing anyone
+  ever needs to click.
