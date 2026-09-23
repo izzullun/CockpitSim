@@ -128,13 +128,40 @@ var dashboardPath = Path.GetFullPath(
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Apply any pending EF migrations so the schema exists on whichever
-// provider is configured (SQLite dev file or the MySQL database), then
-// seed. This makes first-run on a fresh machine self-provisioning.
+// Provision the schema, then seed. The checked-in EF migrations are
+// SQLite-flavored (TEXT/INTEGER, Sqlite:Autoincrement), so only auto-apply
+// them on SQLite (Development). On MySQL we must NOT run them through Pomelo
+// — that would fail at startup. Instead, the MySQL schema is provisioned
+// separately (apply database/mysql/cockpitsim_schema.sql, or generate a
+// MySQL migration set) BEFORE launching in Production; here we only verify
+// the database is reachable.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("Startup");
+
+    if (db.Database.IsSqlite())
+    {
+        // Self-provision the local dev file and apply pending migrations.
+        await db.Database.MigrateAsync();
+    }
+    else if (db.Database.IsMySql())
+    {
+        if (await db.Database.CanConnectAsync())
+        {
+            logger.LogInformation(
+                "MySQL reachable. EF migrations are skipped on MySQL — " +
+                "schema must be provisioned separately (see AGENTS.md).");
+        }
+        else
+        {
+            logger.LogWarning(
+                "MySQL is configured but not reachable at startup. " +
+                "Provision the schema (database/mysql/cockpitsim_schema.sql) " +
+                "and ensure the server is running before relying on the API.");
+        }
+    }
 
     // Seed roles (lowercase, matching authorization policies) and the demo
     // user roster. Both are idempotent — safe to run on every startup.

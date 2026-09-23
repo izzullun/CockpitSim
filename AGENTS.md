@@ -43,9 +43,11 @@ Demo training sessions + notes are also seeded (only when the Sessions table is 
 
 `Data/app.db` is gitignored — first run regenerates and re-seeds it. To reset demo data: stop the backend, delete `Data/app.db`, restart.
 
-DB provider is environment-driven (set in `Program.cs`): **Development → SQLite** (`Data/app.db`, zero setup), **Production → MySQL via Pomelo** (conn string `MySqlConnection` in `appsettings.Production.json`, schema reference in `database/mysql/cockpitsim_schema.sql`). Startup calls `Database.MigrateAsync()` so the schema self-provisions on whichever provider is active.
+DB provider is environment-driven (set in `Program.cs`): **Development → SQLite** (`Data/app.db`, zero setup), **Production → MySQL via Pomelo** (conn string `MySqlConnection` in `appsettings.Production.json`, schema reference in `database/mysql/cockpitsim_schema.sql`).
 
-Remaining MySQL work (needs a machine with MySQL + `dotnet ef`): the checked-in migrations are SQLite-flavored (`TEXT`/`INTEGER`, `Sqlite:Autoincrement`) and will NOT run against MySQL. Generate a parallel MySQL migration set (separate migrations folder/assembly via `MigrationsAssembly` or a named `--output-dir`), or apply `database/mysql/cockpitsim_schema.sql` directly for prod and skip EF migrations there. Decide before first prod deploy.
+Startup behavior differs by provider (in `Program.cs`): **SQLite** auto-applies the checked-in EF migrations via `MigrateAsync()` (self-provisioning dev file). **MySQL does NOT run EF migrations** — the checked-in migrations are SQLite-flavored (`TEXT`/`INTEGER`, `Sqlite:Autoincrement`) and would crash Pomelo at startup. Instead, on MySQL the app only checks `CanConnectAsync()` and logs; the schema must exist already.
+
+Production provisioning (needs a machine with MySQL + `dotnet ef`): either apply `database/mysql/cockpitsim_schema.sql` directly, or generate a parallel MySQL migration set (separate `--output-dir` / `MigrationsAssembly`) and apply that. Do this BEFORE first prod launch. Also create a least-privilege MySQL user (not root) and supply its password via the `ConnectionStrings__MySqlConnection` environment variable — never commit it.
 
 ## Auth Flow (decided, do not change casually)
 
