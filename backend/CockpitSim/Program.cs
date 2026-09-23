@@ -16,10 +16,25 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Web API Controller support (Routes to Controllers/AuthController.cs)
 builder.Services.AddControllers();
 
-// Register the database (SQLite for now — swap to Pomelo MySQL later;
-// only this registration and the connection string change).
+// Register the database. Provider is environment-driven:
+//   Development -> SQLite (local file, zero setup for teammates)
+//   Production  -> MySQL via Pomelo (matches database/mysql/cockpitsim_schema.sql)
+// Connection strings come from appsettings(.{Environment}).json.
+var isDevelopment = builder.Environment.IsDevelopment();
+var connectionString = builder.Configuration.GetConnectionString(
+    isDevelopment ? "DefaultConnection" : "MySqlConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (isDevelopment)
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+    }
+});
 
 // Register ASP.NET Core Identity backed by the DbContext.
 // IdentityCore (no cookies) — auth is JWT-only via the Bearer scheme below.
@@ -76,11 +91,6 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireTrainee", policy => policy.RequireRole("trainee"))
     .AddPolicy("RequireStaff", policy => policy.RequireRole("trainer", "admin"));
 
-// TODO (Member 3): swap to Pomelo MySQL for production:
-// options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-
-
-
 // =========================================================
 // 2. MIDDLEWARE PIPELINE
 // =========================================================
@@ -118,10 +128,43 @@ var dashboardPath = Path.GetFullPath(
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Seed roles (lowercase, matching authorization policies) and the demo
-// user roster. Both are idempotent — safe to run on every startup.
+// Provision the schema, then seed. The checked-in EF migrations are
+// SQLite-flavored (TEXT/INTEGER, Sqlite:Autoincrement), so only auto-apply
+// them on SQLite (Development). On MySQL we must NOT run them through Pomelo
+// — that would fail at startup. Instead, the MySQL schema is provisioned
+// separately (apply database/mysql/cockpitsim_schema.sql, or generate a
+// MySQL migration set) BEFORE launching in Production; here we only verify
+// the database is reachable.
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("Startup");
+
+    if (db.Database.IsSqlite())
+    {
+        // Self-provision the local dev file and apply pending migrations.
+        await db.Database.MigrateAsync();
+    }
+    else if (db.Database.IsMySql())
+    {
+        if (await db.Database.CanConnectAsync())
+        {
+            logger.LogInformation(
+                "MySQL reachable. EF migrations are skipped on MySQL — " +
+                "schema must be provisioned separately (see AGENTS.md).");
+        }
+        else
+        {
+            logger.LogWarning(
+                "MySQL is configured but not reachable at startup. " +
+                "Provision the schema (database/mysql/cockpitsim_schema.sql) " +
+                "and ensure the server is running before relying on the API.");
+        }
+    }
+
+    // Seed roles (lowercase, matching authorization policies) and the demo
+    // user roster. Both are idempotent — safe to run on every startup.
     await DbInitializer.SeedRolesAsync(scope.ServiceProvider);
     if (app.Environment.IsDevelopment())
     {
