@@ -69,6 +69,84 @@ Production provisioning (needs a machine with MySQL + `dotnet ef`): either apply
 - Roles are lowercase everywhere (`trainee`, `trainer`, `admin`) — matching the authorization policies in Program.cs and the seeded Identity roles.
 - `Data/app.db` is a local runtime artifact (gitignored). Delete it + restart the backend to reset/re-seed demo users, sessions, and notes.
 
+## Telemetry & Grading Contract (decided — build against this)
+
+The grading/telemetry pipeline (SimConnect → InfluxDB → backend → dashboard) is
+**parked** per the top of this file. This section is the **contract** the
+dashboards and backend are built to when that work resumes. Dashboards render
+this shape from a stub today; the real sources get implemented later. **Do not
+change the shape or the scenario keys without a team decision — they become
+stored data.**
+
+**Data flow:**
+
+```
+MSFS ─SimConnect→ InfluxDB (raw samples @ 10–20Hz hover / 1–2Hz cruise)
+                      │
+   live:  backend polls Influx (last N sec)  → GET /api/sessions/{id}/live    (score: null)
+   end:   backend aggregates window, grades  → stored in dashboard_reports.metrics_json
+                                             → GET /api/me/sessions/{id}/report (immutable snapshot)
+                      │
+              SessionReport (ONE shape) ──► trainer live view + trainee post-session
+```
+
+**Decisions (locked):**
+- **Dashboards never query InfluxDB directly** — always via the ASP.NET backend
+  (owns JWT auth).
+- **Score is computed once at session-end and stored** in
+  `dashboard_reports.metrics_json` (the column already reserved in
+  `database/mysql/cockpitsim_schema.sql`). Post-session reads the snapshot; it is
+  NOT recomputed on read. Immutable/auditable report; keeps the trainee view off
+  Influx.
+- **Live trainer view uses polling, not SignalR/WebSocket.** 1s hover / 2s
+  cruise matches the polling rates in `BasicHeliTraining.md`. Push is a known
+  ceiling; upgrade path = SignalR **only if** in-session alerts need sub-second
+  latency. Marked in code with a `ponytail:` comment.
+- **One renderer, one payload, two sources.** Live = latest values,
+  `score: null`. Post = aggregates + `score`. Same `SessionReport` shape for
+  both.
+
+**`SessionReport` payload (the contract):**
+
+```jsonc
+{
+  "sessionId": "guid",
+  "scenario": "hover",                 // one of the 5 keys below
+  "status": "in_progress | completed | cancelled | scheduled",
+  "startedAt": "iso8601", "endedAt": "iso8601 | null",
+  "score": null,                       // number when graded; null = live / not yet scored
+  "metrics": [
+    { "key": "radar_alt", "label": "Radar Alt", "unit": "ft",
+      "actual": 5.1, "target": 5.0, "tolerance": 2.0, "withinTol": true }
+  ],
+  "warnings":  [ "string" ],                                  // tolerance breaches / info
+  "timeline":  [ { "time": "mm:ss", "event": "string" } ],    // post-session only
+  "notes":     [ { "author": "...", "createdAt": "iso8601", "note": "..." } ]  // post-session only
+}
+```
+
+**Scenario keys (stored enum — `sessions.scenario`; renaming later is a
+migration):**
+`hover` · `straight_level` · `climb_descent` · `turns` · `takeoff_landing`
+
+Metric definitions (key → SimVar, target, tolerance) come from
+`BasicHeliTraining.md` and live in `dashboard/shared/js/scenarios.js` as pure
+data — the single source of truth the renderer reads. Each scenario defines its
+own metric set; there is no one-size metric block.
+
+**Ownership — Adam owns the full slice:** `scenarios.js`, the shared
+`report-renderer.js`, and BOTH dashboard rewires (trainee post-session +
+trainer live-monitor). Backend (`DashboardReport` EF model, `/live` + `/report`
+endpoints, InfluxDB read, grading) and the SimConnect bridge are **deferred
+until the pipeline resumes.**
+
+**Ponytails in this area (deliberate simplifications):**
+- Stub-fed renderer — ceiling: one canned report / empty live values; upgrade =
+  point at the real endpoints (one-line `apiRequest` swap).
+- Score shows `—` when `null` — ceiling: card looks empty pre-grading; that IS
+  the honest state.
+- Polling — ceiling: ~1s freshness; upgrade = SignalR, marked in code.
+
 ## Git Workflow
 
 - Feature branches off `dev`: `git checkout -b feature/<name>`. PRs merge into `dev`, never straight to `main`.
