@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CockpitSim.Telemetry</RootNamespace>
+    <!-- net8.0-windows: the future SimConnect adapter links the MSFS SDK's
+         Windows-only managed SimConnect.dll (same PC as the sim). -->
+  </PropertyGroup>
+
+</Project>

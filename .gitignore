@@ -19,3 +19,6 @@ Thumbs.db
 
 
 **/.env
+
+# Single-click local bundle (dotnet publish output + local SQLite copy)
+CockpitSimApp/
