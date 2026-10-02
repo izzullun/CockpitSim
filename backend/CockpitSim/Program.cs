@@ -57,6 +57,15 @@ builder.Services.AddSwaggerGen();
 // Register Custom JWT Token Generator Service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+// Session-end grading (score computed once, stored immutably).
+builder.Services.AddScoped<GradingService>();
+
+// Shared SessionReport builder behind both live endpoints.
+builder.Services.AddScoped<LiveReportService>();
+
+// Auto-ends telemetry-silent sessions (sim closed / bridge stopped).
+builder.Services.AddHostedService<TelemetryWatchdog>();
+
 // InfluxDB live-telemetry reader (singleton HttpClient wrapper).
 // Connection comes from Influx:Url/Org/Bucket (appsettings) + the token via
 // Influx:Token or the INFLUX_TOKEN env var — never committed (see .gitignore).

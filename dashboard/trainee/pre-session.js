@@ -79,13 +79,21 @@ function renderHistory(history) {
 
     const feedbackCell = document.createElement("td");
     feedbackCell.textContent = entry.feedback || "—";
+    if (entry.status === "completed" && entry.sessionId) {
+      const link = document.createElement("a");
+      link.className = "queue-link";
+      link.href = `./post-session.html?session=${encodeURIComponent(entry.sessionId)}`;
+      link.textContent = "View report";
+      feedbackCell.append(document.createElement("br"), link);
+    }
 
     row.append(attemptCell, dateCell, durationCell, outcomeCell, feedbackCell);
     tbody.appendChild(row);
   });
 }
 
-// Map one backend session record to a history-table row.
+// Map one backend session record to a history-table row. sessionId is carried
+// through so completed rows can link to their post-session report.
 function toHistoryEntry(s) {
   const started = parseDbDate(s.startedAt);
   let duration = "—";
@@ -101,6 +109,8 @@ function toHistoryEntry(s) {
     : "pending";
 
   return {
+    sessionId: s.sessionId,
+    status: s.status,
     attempt: s.attempt,
     date: started.toISOString().slice(0, 10),
     duration,
@@ -132,9 +142,13 @@ async function loadLiveSection() {
 }
 
 let launchInProgress = false;
-let handoffTimer = null;
 
-function startSession() {
+// Real start: creates the backend session, then hands off to the ongoing
+// page, which polls live telemetry and auto-redirects to the report when the
+// session completes. MSFS itself is opened manually until the launcher
+// host-object slice lands (see AGENTS.md ownership: Member 4) — the hint
+// below says so honestly instead of simulating activity.
+async function startSession() {
   const statusEl = document.getElementById("hud-status");
   const btn = document.getElementById("btn-start-session");
 
@@ -143,23 +157,36 @@ function startSession() {
   }
 
   launchInProgress = true;
-
-  // TODO: replace with real Launcher API call:
-  //   fetch("http://localhost:PORT/msfs/launch", { method: "POST" })
-  //     .then(...) then poll GET /session/status
   statusEl.textContent = "LAUNCHING…";
   btn.disabled = true;
   btn.style.opacity = "0.6";
   btn.style.cursor = "not-allowed";
 
-  console.log("[pre-session] startSession() stub called — no Launcher API wired yet.");
+  // Scenario comes from the assigned-session panel; hover is the only graded
+  // rubric so far, anything else starts but reports "no rubric yet".
+  const res = await apiRequest("/me/sessions/start", {
+    method: "POST",
+    auth: true,
+    body: { scenario: "hover" },
+  });
 
-  // Simulated feedback only, for demo purposes until Launcher API exists.
-  handoffTimer = setTimeout(() => {
-    statusEl.textContent = "ACTIVE (SIMULATED)";
+  if (res.ok && res.data && res.data.sessionId) {
+    window.location.href = `./session-ongoing.html?session=${encodeURIComponent(res.data.sessionId)}`;
+    return;
+  }
 
-    window.location.href = "./post-session.html";
-  }, 1200);
+  // 409 = a session is already running — pick up where it left off.
+  if (res.status === 409 && res.data && res.data.sessionId) {
+    window.location.href = `./session-ongoing.html?session=${encodeURIComponent(res.data.sessionId)}`;
+    return;
+  }
+
+  statusEl.textContent = "START FAILED";
+  btn.disabled = false;
+  btn.style.opacity = "";
+  btn.style.cursor = "";
+  launchInProgress = false;
+  console.error("[pre-session] start failed", res.status, res.data);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
