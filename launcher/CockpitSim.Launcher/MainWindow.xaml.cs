@@ -18,13 +18,16 @@ public partial class MainWindow : Window
     private static readonly TimeSpan HealthTimeout = TimeSpan.FromSeconds(3);
 
     private readonly LauncherConfig _config = LauncherConfig.Load();
+    private readonly BridgeHost _bridge;
     private bool _webViewReady;
     private bool _webviewSettingsApplied;
 
     public MainWindow()
     {
+        _bridge = new BridgeHost(_config);
         InitializeComponent();
         Loaded += MainWindow_Loaded;
+        Closed += (_, _) => _bridge.Dispose();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -101,6 +104,10 @@ public partial class MainWindow : Window
         ApplyWebViewSettings();
         WebView.CoreWebView2.Navigate(_config.LoginUrl);
         WebView.Visibility = Visibility.Visible;
+
+        // Backend is up (we only get here past the health gate), so the
+        // bridge can discover sessions immediately — no session id needed.
+        _bridge.EnsureRunning();
     }
 
     private void ApplyWebViewSettings()
