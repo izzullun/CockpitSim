@@ -43,3 +43,8 @@ public class FeedbackRequestDto
 {
     public string Note { get; set; } = string.Empty;
 }
+
+public class StartSessionRequestDto
+{
+    public string Scenario { get; set; } = string.Empty;
+}

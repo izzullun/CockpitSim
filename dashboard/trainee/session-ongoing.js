@@ -38,20 +38,54 @@ function renderFlags(report) {
   });
 }
 
+function bridgeCommand() {
+  return `dotnet run --project telemetry/CockpitSim.Telemetry -- --mock --session ${sessionId} --rate 10`;
+}
+
 function renderLive(report) {
   document.getElementById("hud-status").textContent = "LIVE";
   document.getElementById("ongoing-exercise").textContent = report.scenario || "—";
+  document.getElementById("ongoing-session").textContent = report.sessionId || "—";
   document.getElementById("elapsed-time").textContent = elapsedText();
+
+  const warnings = report.warnings || [];
+  const noBackend = warnings.some((w) => w.includes("not configured"));
+  const noData = warnings.some((w) => w.includes("last 30s"));
+  const simulated = warnings.some((w) => w.includes("Simulated feed"));
 
   const graded = (report.metrics || []).filter((m) => m.withinTol !== null && m.withinTol !== undefined);
   const breaches = graded.filter((m) => m.withinTol === false).length;
-  const waiting = (report.metrics || []).length > 0 && graded.length === 0;
+  const waiting = noBackend || noData || graded.length === 0;
 
-  document.getElementById("tol-status").textContent = waiting
-    ? "Waiting for telemetry…"
-    : breaches === 0 ? "All within tolerance" : `${breaches} metric${breaches > 1 ? "s" : ""} to check`;
-  document.getElementById("warning-count").textContent = String((report.warnings || []).length);
-  setState(waiting ? "CONNECTING" : breaches === 0 ? "ON TRACK" : "CHECK", breaches === 0 && !waiting);
+  // Three visibly different states so there is no guessing: setup needed
+  // (backend has no token) vs bridge not running (no points) vs live feed.
+  const tolEl = document.getElementById("tol-status");
+  const cmdWrap = document.getElementById("bridge-cmd-wrap");
+  if (noBackend) {
+    tolEl.textContent = "Setup needed — backend has no telemetry token.";
+    document.getElementById("ongoing-hint").textContent =
+      "Add INFLUX_TOKEN to the backend and restart it; live values appear here once data flows.";
+    cmdWrap.hidden = true;
+    setState("SETUP", false);
+  } else if (noData || graded.length === 0) {
+    tolEl.textContent = "Bridge not running — no points in the last 30s.";
+    document.getElementById("ongoing-hint").textContent =
+      simulated || !noData
+        ? "Waiting for telemetry…"
+        : "Start the bridge below (same session id), then fly or let the mock run.";
+    document.getElementById("bridge-cmd").textContent = bridgeCommand();
+    cmdWrap.hidden = false;
+    setState("CONNECTING", false);
+  } else {
+    tolEl.textContent = breaches === 0 ? "All within tolerance" : `${breaches} metric${breaches > 1 ? "s" : ""} to check`;
+    document.getElementById("ongoing-hint").textContent = simulated
+      ? "Receiving simulated feed (mock) — not live MSFS 2020 data."
+      : "Receiving live telemetry.";
+    cmdWrap.hidden = true;
+    setState(breaches === 0 ? "ON TRACK" : "CHECK", breaches === 0);
+  }
+
+  document.getElementById("warning-count").textContent = String(warnings.length);
   renderFlags(report);
 }
 
@@ -85,6 +119,28 @@ async function handleFinished() {
   // stay put, keep polling until it appears.
 }
 
+let ending = false;
+
+async function endSession() {
+  if (ending || redirected || !sessionId) return;
+  ending = true;
+  const btn = document.getElementById("btn-end-session");
+  btn.disabled = true;
+  document.getElementById("ongoing-hint").textContent = "Ending session…";
+  const res = await apiRequest(`/me/sessions/${sessionId}/end`, {
+    method: "POST",
+    auth: true,
+  });
+  if (!res.ok) {
+    ending = false;
+    btn.disabled = false;
+    document.getElementById("ongoing-hint").textContent =
+      "Could not end the session — keep flying, or reload this page to retry.";
+    return;
+  }
+  await handleFinished();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (session) {
     document.getElementById("hud-username").textContent = session.username.toUpperCase();
@@ -97,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const def = (typeof scenarioDef === "function" && scenarioDef("hover")) || null;
   const interval = (def && def.pollMs) || 1000;
+  document.getElementById("btn-end-session").addEventListener("click", endSession);
   pollOnce();
   pollTimer = setInterval(pollOnce, interval);
   clockTimer = setInterval(() => {

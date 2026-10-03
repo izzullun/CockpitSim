@@ -14,6 +14,8 @@ public sealed class MockHoverSource : ITelemetrySource
     private const double TargetAltFt = 5.0;
     private const double TargetHeadingDeg = 90.0;
 
+    public string SourceName => "mock";
+
     public MockHoverSource(int samplesPerSecond = 10)
     {
         _samplesPerSecond = Math.Clamp(samplesPerSecond, 1, 20);

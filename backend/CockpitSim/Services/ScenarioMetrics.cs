@@ -24,6 +24,9 @@ public static class ScenarioMetrics
         new("pitch", "pitch_deg", "Pitch", "°", 0.0, 5.0),
         new("heading", "heading_true_deg", "Heading", "°", null, null),
         new("collective", "collective_pct", "Collective", "%", null, null),
+        // State, not skill: 1 = on ground/menu, 0 = airborne. Informational
+        // only (never graded) — lets dashboards tell parked from flying.
+        new("on_ground", "on_ground", "On Ground", "", null, null),
     };
 
     // Stored Scenario values predate the enum keys ("Hover Hold — Attempt 1");
@@ -43,8 +46,24 @@ public static class ScenarioMetrics
     public static IReadOnlyList<MetricDef> ForScenario(string scenarioKey) =>
         scenarioKey == "hover" ? Hover : Array.Empty<MetricDef>();
 
+    // Stored enum keys — new sessions must use one of these (they become
+    // stored data; renaming later is a migration).
+    public static readonly string[] KnownKeys =
+    {
+        "hover", "straight_level", "climb_descent", "turns", "takeoff_landing",
+    };
+
+    // Strict parse for session creation: only exact enum keys (case-insensitive).
+    public static bool TryParseKey(string? input, out string key)
+    {
+        key = (input ?? string.Empty).Trim().ToLowerInvariant();
+        if (KnownKeys.Contains(key)) return true;
+        key = string.Empty;
+        return false;
+    }
+
     public static ReportMetricDto ToReport(
-        MetricDef def, Dictionary<string, (double Value, DateTimeOffset At)> latest)
+        MetricDef def, Dictionary<string, (double Value, DateTimeOffset At, string Source)> latest)
     {
         var dto = new ReportMetricDto
         {

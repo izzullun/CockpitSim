@@ -18,4 +18,5 @@ public sealed record HoverSample
     public double BankDeg { get; init; }            // PLANE BANK DEGREES
     public double PitchDeg { get; init; }           // PLANE PITCH DEGREES
     public double CollectivePct { get; init; }      // COLLECTIVE POSITION (%)
+    public bool OnGround { get; init; }             // SIM ON GROUND (menu/parked vs flying)
 }

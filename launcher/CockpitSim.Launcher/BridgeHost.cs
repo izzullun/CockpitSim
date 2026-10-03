@@ -38,10 +38,12 @@ public sealed class BridgeHost : IDisposable
 
         try
         {
+            // No --mock: live MSFS data by default (use --mock only for testing).
+            // AutoStartBridge=false in appsettings.json disables this entirely.
             _process = Process.Start(new ProcessStartInfo
             {
                 FileName = exe,
-                Arguments = "--mock --rate 10",
+                Arguments = "--rate 10",
                 WorkingDirectory = Path.GetDirectoryName(exe)!,
                 CreateNoWindow = true,
                 UseShellExecute = false,

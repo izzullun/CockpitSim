@@ -69,6 +69,18 @@ public sealed class LiveReportService
             }
         }
 
+        // Feed provenance: all-mock means the numbers are a simulated replay,
+        // not the simulator. Mixed/unknown sources stay silent (no assumption).
+        var sources = latest.Values
+            .Select(v => v.Source)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (sources.Count > 0 && sources.All(s => s == "mock"))
+        {
+            report.Warnings.Add("Simulated feed (mock) — not live MSFS 2020 data.");
+        }
+
         return report;
     }
 }

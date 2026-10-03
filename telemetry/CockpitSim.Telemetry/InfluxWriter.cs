@@ -26,11 +26,12 @@ public sealed class InfluxWriter : IDisposable
             "&precision=ms";
     }
 
-    public static string ToLineProtocol(HoverSample s, string sessionId, string scenario)
+    public static string ToLineProtocol(HoverSample s, string sessionId, string scenario, string source = "mock")
     {
         var sb = new StringBuilder(Measurement);
         sb.Append(",sessionId=").Append(EscapeTag(sessionId));
         sb.Append(",scenario=").Append(EscapeTag(scenario));
+        sb.Append(",source=").Append(EscapeTag(source));
         sb.Append(' ');
 
         var first = true;
@@ -51,6 +52,7 @@ public sealed class InfluxWriter : IDisposable
         Field("bank_deg", s.BankDeg);
         Field("pitch_deg", s.PitchDeg);
         Field("collective_pct", s.CollectivePct);
+        Field("on_ground", s.OnGround ? 1.0 : 0.0);
 
         if (first) return string.Empty; // no valid fields — skip the sample
         sb.Append(' ').Append(s.Timestamp.ToUnixTimeMilliseconds());

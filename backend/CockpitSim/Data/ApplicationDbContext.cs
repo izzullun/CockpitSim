@@ -8,4 +8,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<TrainingSession> Sessions => Set<TrainingSession>();
     public DbSet<SessionNote> SessionNotes => Set<SessionNote>();
+    public DbSet<DashboardReport> Reports => Set<DashboardReport>();
 }
