@@ -21,18 +21,22 @@ You do **not** need git, the .NET SDK, or the MSFS SDK on this machine.
 |---|------|-----|-------|
 | 1 | **MSFS 2020** + a helicopter flight | The simulator is the data source | Stock Cabri G2 or Bell 407 is fine; you open and fly it yourself |
 | 2 | **Steam** signed in (Steam edition) | Needed to run MSFS | Skip for Store edition |
-| 3 | **.NET 8 runtimes** — *ASP.NET Core Runtime 8.0.x* (includes the base runtime) | The app folder is framework-dependent, not self-contained | SDK **not** required; any 8.0.x works |
-| 4 | **Docker Desktop** | Runs the InfluxDB telemetry database | Start it and wait for "Engine running" |
-| 5 | **WebView2 Evergreen Runtime** | The desktop app window is WebView2-based | Preinstalled on most Windows 10/11 — install from Microsoft only if the app complains on launch |
+| 3 | **Docker Desktop** | Runs the InfluxDB telemetry database | Start it and wait for "Engine running" |
+| 4 | **WebView2 Evergreen Runtime** | The desktop app window is WebView2-based | Preinstalled on most Windows 10/11 — install from Microsoft only if the app complains on launch |
 
-You do **not** need: git, Visual Studio, the MSFS SDK, or any SimConnect
-installer. The SimConnect *server* ships inside MSFS itself; the *client*
-DLLs travel inside the app folder (see `telemetry/`).
+You do **not** need: git, Visual Studio, the .NET SDK *or* runtimes, the MSFS
+SDK, or any SimConnect installer. Release builds are self-contained (the .NET
+runtime travels inside the app folder); the SimConnect *server* ships inside
+MSFS itself and the *client* DLLs travel inside the app folder (see
+`telemetry/`).
 
-### 2. Copy the app folder
+### 2. Download the app
 
-Copy the **`CockpitSimApp/`** folder onto the PC (USB, zip, network share —
-any method). It contains:
+From the repo's **Releases** page, download the latest
+`CockpitSimApp-win-x64.zip` (~190 MB) and unzip it anywhere. Optionally verify
+it against the published `.sha256` checksum. First launch shows a Windows
+SmartScreen "unknown publisher" prompt (unsigned FYP build) — click through it.
+The unzipped **`CockpitSimApp/`** folder contains:
 
 ```
 CockpitSimApp/
@@ -48,9 +52,10 @@ CockpitSimApp/
   .env.example    empty template showing the shape
 ```
 
-> The folder is gitignored on purpose — it is build output plus local secrets,
-> never committed. Re-copy it (or re-publish — see Path B) whenever the app
-> is updated. **After updating, close the app first**: stale WebView2 cache
+> No release yet, or updating between releases? Copy a locally published
+> `CockpitSimApp/` folder instead (USB/zip/share — see *Republish* under
+> Path B). Either way the folder itself is gitignored: build output plus
+> local secrets, never committed. **After updating, close the app first**: stale WebView2 cache
 > can otherwise show you old pages (see Troubleshooting).
 
 ### 3. Create InfluxDB (one command)
@@ -302,7 +307,12 @@ dotnet publish backend/CockpitSim -c Release -o CockpitSimApp/backend
 dotnet publish launcher/CockpitSim.Launcher -c Release -o CockpitSimApp/launcher
 dotnet publish telemetry/CockpitSim.Telemetry -c Release -o CockpitSimApp/telemetry
 Copy-Item -Path "dashboard/*" -Destination "CockpitSimApp/backend/dashboard/" -Recurse -Force
+Copy-Item -Path "packaging/*.cmd", "packaging/.env.example" -Destination "CockpitSimApp/" -Force
 ```
+
+Releases publish the same three projects with `-r win-x64 --self-contained`
+(see `.github/workflows/release.yml`) so target PCs need no .NET runtime;
+day-to-day local publishes stay framework-dependent for speed.
 
 ## Path C — Production database (MySQL)
 
