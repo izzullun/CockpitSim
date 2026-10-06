@@ -13,9 +13,9 @@
     <Grid>
         <wv2:WebView2 x:Name="WebView" Visibility="Collapsed" />
 
-        <!-- Shown while the backend health check runs on startup. -->
+        <!-- Shown while the backend auto-starts and the health check runs. -->
         <StackPanel x:Name="StatusPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="CONNECTING TO COCKPITSIM SERVER…"
+            <TextBlock x:Name="StatusText" Text="STARTING COCKPITSIM SERVER…"
                        Foreground="#8A97A8" FontSize="14"
                        FontFamily="Segoe UI" />
         </StackPanel>
@@ -27,7 +27,7 @@
                 <TextBlock Text="CANNOT REACH THE COCKPITSIM SERVER"
                            Foreground="#00D9FF" FontSize="20" FontWeight="SemiBold"
                            HorizontalAlignment="Center" />
-                <TextBlock Text="Make sure the CockpitSim backend service is running, then retry."
+                <TextBlock Text="The app tried to start the server automatically — check Docker Desktop is running, then retry."
                            Foreground="#8A97A8" FontSize="13" TextWrapping="Wrap"
                            TextAlignment="Center" Margin="0,16,0,0" />
                 <TextBlock x:Name="ErrorDetail" Foreground="#8A97A8" FontSize="11"

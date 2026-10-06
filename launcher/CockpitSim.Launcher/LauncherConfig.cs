@@ -24,6 +24,16 @@ public sealed class LauncherConfig
     /// <summary>Explicit bridge exe path. When empty, resolved next to the app.</summary>
     public string BridgeExePath { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Auto-start the backend as a hidden child process when
+    /// GET /api/health fails at launch (mirrors Start-CockpitSim.cmd).
+    /// Disable only when a backend is managed externally.
+    /// </summary>
+    public bool AutoStartBackend { get; set; } = true;
+
+    /// <summary>Explicit backend exe path. When empty, resolved next to the app.</summary>
+    public string BackendExePath { get; set; } = string.Empty;
+
     public string HealthUrl => $"{BackendBaseUrl}/api/health";
     public string LoginUrl => $"{BackendBaseUrl}/dashboard/login/login.html";
 
