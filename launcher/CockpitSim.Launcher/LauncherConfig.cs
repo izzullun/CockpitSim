@@ -15,6 +15,16 @@ public sealed class LauncherConfig
     public string BackendBaseUrl { get; set; } = DefaultBaseUrl;
 
     /// <summary>
+    /// Address the backend binds to when this launcher starts it (used for the
+    /// child's ASPNETCORE_URLS). Defaults to 0.0.0.0 so the trainer PC can
+    /// reach the dashboard over the LAN. Distinct from <see cref="BackendBaseUrl"/>,
+    /// which is where THIS app points its health check + browser (localhost is
+    /// correct on the same machine). Set to http://localhost:5247 to keep the
+    /// backend loopback-only.
+    /// </summary>
+    public string BackendBindUrl { get; set; } = "http://0.0.0.0:5247";
+
+    /// <summary>
     /// Auto-start the telemetry bridge as a hidden child process while the app
     /// runs. The bridge self-discovers sessions (GET /api/bridge/active), so no
     /// session id is passed — disable only for debugging.
