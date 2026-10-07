@@ -10,18 +10,12 @@ function fmtActual(metric) {
   return `${metric.actual} ${metric.unit || ""}`.trim();
 }
 
-// Graded (target ± tolerance) → "aim <low>–<high> <unit>" — the acceptable
-// range spelled out, not the math. Informational metrics (no target) → "" so
-// the caller hides the target span entirely (no dangling "target —").
+// Display choice: the report shows each metric's actual value only — no
+// target/tolerance quote. Grading still uses target/tolerance server-side
+// (ScenarioMetrics + GradingService); this only hides them on the report.
+// Returns "" for every metric so the caller never renders a target span.
 function fmtTarget(metric) {
-  if (metric.target === null || metric.target === undefined) return "";
-  const unit = metric.unit || "";
-  const tol = metric.tolerance;
-  if (tol === null || tol === undefined) return `aim ${metric.target} ${unit}`.trim();
-  const round2 = (n) => Math.round(n * 100) / 100;
-  const low = round2(metric.target - tol);
-  const high = round2(metric.target + tol);
-  return `aim ${low}–${high} ${unit}`.trim();
+  return "";
 }
 
 // 01 // summary cards from a report: flight time, completion, score, risk.
