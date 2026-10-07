@@ -35,7 +35,10 @@
 
         <div class="field-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+          <div class="password-wrap">
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+            <button type="button" id="toggle-password" aria-label="Show password"></button>
+          </div>
         </div>
 
         <p id="form-error" class="form-error" role="alert" hidden></p>
