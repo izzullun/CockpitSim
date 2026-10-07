@@ -46,6 +46,11 @@ backend ever runs on a different address or port, edit `appsettings.json`
 
 ## Notes
 
+- The app auto-starts the telemetry bridge as a hidden child process (mock
+  hover feed, self-discovers the active session — no session id needed) and
+  stops it on exit. Disable with `"AutoStartBridge": false` in
+  `appsettings.json`. If the bridge exe is missing, the app runs on without
+  telemetry.
 - The app remembers your login between launches (you stay signed in like a
   normal desktop app).
 - When the backend is deployed as a Windows Service on the demo PC, it starts

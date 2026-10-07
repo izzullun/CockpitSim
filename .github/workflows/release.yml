@@ -1,0 +1,75 @@
+name: release
+
+# Cut a release: git tag v0.1.0 (from dev) && git push origin v0.1.0
+# Produces the self-contained Windows bundle (no .NET runtime needed on the
+# target PC) plus checksums. Unsigned build: expect a Windows SmartScreen
+# "unknown publisher" click-through on first launch (signing is a non-goal).
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-bundle:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify dashboard JS syntax
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse dashboard -Filter *.js | ForEach-Object {
+            node --check $_.FullName
+          }
+
+      - name: Publish self-contained win-x64 bundle
+        shell: pwsh
+        run: |
+          $bundle = "CockpitSimApp"
+          dotnet publish backend/CockpitSim -c Release -r win-x64 --self-contained -o "$bundle/backend"
+          dotnet publish launcher/CockpitSim.Launcher -c Release -r win-x64 --self-contained -o "$bundle/launcher"
+          dotnet publish telemetry/CockpitSim.Telemetry -c Release -r win-x64 --self-contained -o "$bundle/telemetry"
+          Copy-Item -Path "dashboard/*" -Destination "$bundle/backend/dashboard/" -Recurse -Force
+          Copy-Item -Path "packaging/*.cmd" -Destination "$bundle/" -Force
+          Copy-Item -Path "packaging/.env.example" -Destination "$bundle/.env.example" -Force
+
+      - name: Zip + checksum
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "CockpitSimApp" -DestinationPath "CockpitSimApp-win-x64.zip"
+          (Get-FileHash "CockpitSimApp-win-x64.zip" -Algorithm SHA256).Hash `
+            | Out-File "CockpitSimApp-win-x64.zip.sha256"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            CockpitSimApp-win-x64.zip
+            CockpitSimApp-win-x64.zip.sha256
+          generate_release_notes: true
+          body: |
+            ## Run it (no source code, no .NET install needed)
+
+            1. Unzip `CockpitSimApp-win-x64.zip` (~190 MB download).
+            2. Prerequisites on the PC: MSFS 2020 + helicopter, Steam signed in
+               (Steam edition), Docker Desktop, WebView2 (preinstalled on most
+               Windows 10/11).
+            3. Create InfluxDB (one command) and write the token to
+               `CockpitSimApp/.env` (`INFLUX_TOKEN=...`, see `.env.example`).
+            4. Double-click `Start-CockpitSim.cmd`, log in, fly:
+               `trainee_adam` / `Adam123!`, `trainer_azlan` / `Azlan123!`.
+
+            Full guide: `SETUP.md` Path A in the repo. Unsigned build: Windows
+            SmartScreen shows an "unknown publisher" prompt on first launch —
+            click through it.

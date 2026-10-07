@@ -57,6 +57,21 @@ builder.Services.AddSwaggerGen();
 // Register Custom JWT Token Generator Service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+// Session-end grading (score computed once, stored immutably).
+builder.Services.AddScoped<GradingService>();
+
+// Shared SessionReport builder behind both live endpoints.
+builder.Services.AddScoped<LiveReportService>();
+
+// Auto-ends telemetry-silent sessions (sim closed / bridge stopped).
+builder.Services.AddHostedService<TelemetryWatchdog>();
+
+// InfluxDB live-telemetry reader (singleton HttpClient wrapper).
+// Connection comes from Influx:Url/Org/Bucket (appsettings) + the token via
+// Influx:Token or the INFLUX_TOKEN env var — never committed (see .gitignore).
+// Missing token = configured-off: /live returns honest empties, nothing throws.
+builder.Services.AddSingleton<InfluxService>();
+
 // Enable CORS (Allows your WebView2 HTML/JS dashboard to call this API)
 builder.Services.AddCors(options =>
 {
@@ -115,15 +130,32 @@ if (!app.Environment.IsDevelopment())
 app.UseCors("AllowLocalhost");
 
 // Enable Authentication & Authorization (MUST come before app.MapControllers)
-var dashboardPath = Path.GetFullPath(
-      Path.Combine(builder.Environment.ContentRootPath, "..",
-      "..", "dashboard"));
+// Dashboard location: dev runs from backend/CockpitSim (../../dashboard),
+// published single-click bundle runs with dashboard/ copied next to the exe.
+// Pick the first candidate that exists so both layouts work.
+var dashboardCandidates = new[]
+{
+    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "dashboard")),
+    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "dashboard")),
+    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "dashboard")),
+    Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "dashboard")),
+};
+var dashboardPath = dashboardCandidates.FirstOrDefault(Directory.Exists, dashboardCandidates[0]);
 
-  app.UseStaticFiles(new StaticFileOptions
-  {
-      FileProvider = new PhysicalFileProvider(dashboardPath),
-      RequestPath = "/dashboard"
-  });
+if (Directory.Exists(dashboardPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(dashboardPath),
+        RequestPath = "/dashboard"
+    });
+}
+else
+{
+    app.Logger.LogWarning(
+        "Dashboard folder not found. Tried: {Paths}. /dashboard will 404.",
+        string.Join("; ", dashboardCandidates));
+}
   
 app.UseAuthentication();
 app.UseAuthorization();
@@ -144,6 +176,11 @@ using (var scope = app.Services.CreateScope())
     if (db.Database.IsSqlite())
     {
         // Self-provision the local dev file and apply pending migrations.
+        // The Data/ folder is gitignored so it is missing from `dotnet publish`
+        // output — create it next to the exe (and CWD) or SQLite can't open
+        // Data/app.db (Error 14) on first launch of the single-click bundle.
+        Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "Data"));
+        Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data"));
         await db.Database.MigrateAsync();
     }
     else if (db.Database.IsMySql())

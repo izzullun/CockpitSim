@@ -1,12 +1,16 @@
 // ==========================================================================
 // CockpitSim — Trainer Dashboard
-// Live data: roster + session queue from /api/sessions/queue, feedback via
-// /api/trainees/{id}/notes and /api/sessions/{id}/feedback (trainer-only).
-//
-// TODO (SimConnect/telemetry pipeline): liveStats (altitude/airspeed/RPM),
-//   warnings, riskLevel and liveScore have no backend source yet — they show
-//   neutral placeholders until the launcher streams telemetry.
-// TODO: trend bars remain illustrative until historical metrics exist.
+// Live data: session queue from /api/sessions/queue, real-time tracking via
+// GET /api/sessions/{id}/live (trainer-only, SessionReport score:null),
+// feedback via /api/trainees/{id}/notes and /api/sessions/{id}/feedback.
+// Analytics are queue-derived (active trainees, completion rate, avg session
+// length, awaiting-feedback) + real weekly session counts — no dummy data.
+// Live panel polls at the scenario rate (hover ~1s, see scenarios.js).
+// ponytail: polling, ~1s freshness; upgrade = SignalR if sub-second alerts
+// are ever required.
+// TODO (per-session feedback coverage): TraineeNoteDto now carries sessionId
+//   and GET /api/sessions/feedback-coverage gives exact per-session counts.
+//   The trainee-level fallback below stays for older backends.
 // ==========================================================================
 
 // Guard: trainers (and admins previewing) only.
@@ -16,14 +20,19 @@ if (session) {
 	document.getElementById('hud-username').textContent = session.username.toUpperCase();
 
 let QUEUE = [];            // raw queue rows from the API
-let TRAINTEES = [];        // roster derived from the queue
+let TRAINTEES = [];        // roster derived from the queue (drives dropdown + analytics)
 let selectedTraineeId = null;
-const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note}]
+let selectedSessionId = null; // specific session shown in the feedback snapshot
+const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note, sessionId?}]
+let COVERAGE = null;       // GET /api/sessions/feedback-coverage, when available
+let SESSION_FILTER = 'all'; // all | in_progress | completed | scheduled
 
-// Neutral placeholders until telemetry streaming exists.
-const PLACEHOLDER_MONITORING = {
-	altitude: '—', airspeed: '—', heading: '—', verticalSpeed: '—', rotorRpm: '—'
-};
+// Real-time tracking state (restored from telemetry-pipeline branch).
+let liveTimer = null;
+let liveClock = null;
+let liveInFlight = false;
+let liveSessionId = null;
+let liveStartedAt = null;
 
 function statusLabelFor(sessions) {
 	if (sessions.some((item) => item.status === 'in_progress')) return 'In session';
@@ -64,6 +73,7 @@ function buildRoster() {
 		byTrainee.get(item.traineeId).push(item);
 	});
 
+	TRAINTEES = [];
 	// API returns newest first, so sessions[0] is the latest.
 	for (const [traineeId, sessions] of byTrainee) {
 		const latest = sessions[0];
@@ -76,27 +86,172 @@ function buildRoster() {
 			currentExercise: latest.scenario || 'Unassigned exercise',
 			lastActiveAt: latest.startedAt,
 			sessionStateLabel: stateLabelFor(latest.status),
-			monitoring: { ...PLACEHOLDER_MONITORING },
-			warnings: ['Telemetry stream not connected yet'],
-			riskLevel: 'Low',
+			sessionCount: sessions.length,
+			completedCount: sessions.filter((s) => s.status === 'completed').length,
+			hasLive: sessions.some((s) => s.status === 'in_progress'),
 		});
 	}
+	sortRoster();
+}
+
+function rosterRank(t) {
+	if (t.hasLive) return 0;
+	const notes = FEEDBACK_CACHE[t.id];
+	const awaiting = Array.isArray(notes)
+		? (t.completedCount > 0 && notes.length === 0)
+		: (COVERAGE?.items?.find((i) => i.traineeId === t.id)?.awaitingSessions > 0);
+	if (awaiting) return 1;
+	if (t.status === 'Needs attention') return 2;
+	return 3;
+}
+
+function sortRoster() {
+	TRAINTEES.sort((a, b) => {
+		const r = rosterRank(a) - rosterRank(b);
+		if (r !== 0) return r;
+		return parseDbDate(b.lastActiveAt) - parseDbDate(a.lastActiveAt);
+	});
+}
+
+function traineeAwaiting(traineeId) {
+	if (COVERAGE?.items) {
+		const item = COVERAGE.items.find((i) => i.traineeId === traineeId);
+		if (item) return item.awaitingSessions > 0;
+	}
+	const t = TRAINTEES.find((x) => x.id === traineeId);
+	const notes = FEEDBACK_CACHE[traineeId];
+	if (!t || !Array.isArray(notes)) return false;
+	return t.completedCount > 0 && notes.length === 0;
+}
+
+function formatShortDate(iso) {
+	const d = parseDbDate(iso);
+	if (!d || !Number.isFinite(d.getTime())) return '—';
+	return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function formatDurationMins(startedAt, endedAt) {
+	if (!startedAt || !endedAt) return '—';
+	const mins = (parseDbDate(endedAt) - parseDbDate(startedAt)) / 60000;
+	if (!Number.isFinite(mins) || mins < 0) return '—';
+	if (mins < 1) return '<1 min';
+	if (mins < 60) return `${Math.round(mins)} min`;
+	return `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m`;
+}
+
+function newestSessionFor(traineeId) {
+	return QUEUE.find((item) => item.traineeId === traineeId) || null;
+}
+
+function sessionScenarioName(sessionId) {
+	const s = QUEUE.find((item) => item.sessionId === sessionId);
+	return s?.scenario || 'session';
+}
+
+function completedDurationsMinutes() {
+	return QUEUE
+		.filter((item) => item.status === 'completed' && item.startedAt && item.endedAt)
+		.map((item) => (parseDbDate(item.endedAt) - parseDbDate(item.startedAt)) / 60000)
+		.filter((mins) => Number.isFinite(mins) && mins >= 0);
+}
+
+function formatAvgDuration(mins) {
+	if (mins.length === 0) return '—';
+	const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
+	if (avg < 60) return `${Math.round(avg)} min`;
+	const h = Math.floor(avg / 60);
+	const m = Math.round(avg % 60);
+	return `${h}h ${m}m`;
+}
+
+function formatTotalDuration(mins) {
+	if (mins.length === 0) return 'no completed sessions yet';
+	const total = mins.reduce((a, b) => a + b, 0);
+	if (total < 60) return `total ${Math.round(total)} min`;
+	return `total ${(total / 60).toFixed(1)}h`;
+}
+
+// Sessions per week for the last 6 weeks (oldest -> newest), from queue dates.
+function sessionsPerWeek() {
+	const weeks = [0, 0, 0, 0, 0, 0];
+	const starts = [];
+	const now = new Date();
+	// Monday-start buckets for stable labels.
+	const monday = new Date(now);
+	const dow = (monday.getDay() + 6) % 7;
+	monday.setDate(monday.getDate() - dow);
+	monday.setHours(0, 0, 0, 0);
+	for (let i = 5; i >= 0; i--) {
+		const s = new Date(monday);
+		s.setDate(s.getDate() - i * 7);
+		starts.unshift(s);
+	}
+	QUEUE.forEach((item) => {
+		if (!item.startedAt) return;
+		const t = parseDbDate(item.startedAt).getTime();
+		if (!Number.isFinite(t)) return;
+		const weeksAgo = Math.floor((now.getTime() - t) / (7 * 24 * 60 * 60 * 1000));
+		if (weeksAgo >= 0 && weeksAgo < 6) weeks[5 - weeksAgo] += 1;
+	});
+	return { counts: weeks, starts };
+}
+
+function weekLabel(date) {
+	return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Awaiting-feedback: prefers exact per-session coverage from the backend,
+// falls back to trainee-level (completed sessions but zero notes) for older
+// backends. Uses the same notes cache as the feedback panel when falling back.
+function awaitingFeedbackCount() {
+	if (COVERAGE && Number.isFinite(COVERAGE.awaitingTrainees)) return COVERAGE.awaitingTrainees;
+	let count = 0;
+	for (const trainee of TRAINTEES) {
+		const sessions = QUEUE.filter((item) => item.traineeId === trainee.id);
+		const hasCompleted = sessions.some((item) => item.status === 'completed');
+		if (!hasCompleted) continue;
+		const notes = FEEDBACK_CACHE[trainee.id];
+		if (Array.isArray(notes) && notes.length === 0) count += 1;
+		// notes === undefined = not loaded yet: don't count, caller refreshes after load.
+	}
+	return count;
+}
+
+function awaitingFeedbackDelta(awaiting) {
+	if (COVERAGE && Number.isFinite(COVERAGE.awaitingSessions)) {
+		if (awaiting === 0) return 'all reviewed';
+		return `${COVERAGE.awaitingSessions} sessions • ${COVERAGE.totalCompleted} completed`;
+	}
+	if (awaiting === 0) return 'all reviewed';
+	return 'trainees • completed, no notes yet';
+}
+
+function notesLoadedForAll() {
+	if (COVERAGE) return true;
+	return TRAINTEES.every((t) => Array.isArray(FEEDBACK_CACHE[t.id]));
 }
 
 function renderAnalytics() {
 	const container = document.getElementById('analytics-cards');
 	container.innerHTML = '';
 
-	// Real figures derived from the queue; the rest stay placeholder.
+	// Real figures derived from the queue + notes cache.
 	const completed = QUEUE.filter((item) => item.status === 'completed').length;
-	const passRate = QUEUE.length > 0 ? Math.round((completed / QUEUE.length) * 100) : 0;
+	const completionRate = QUEUE.length > 0 ? Math.round((completed / QUEUE.length) * 100) : 0;
+	const durations = completedDurationsMinutes();
 
-	// TODO: avg score needs a scoring backend; pending reviews needs a review workflow.
+	const awaitingReady = notesLoadedForAll();
+	const awaiting = awaitingReady ? awaitingFeedbackCount() : null;
+
 	const analytics = [
 		{ label: 'Active trainees', value: String(TRAINTEES.length), delta: `${TRAINTEES.length} assigned to you` },
-		{ label: 'Pass rate', value: `${passRate}%`, delta: `${completed}/${QUEUE.length} sessions` },
-		{ label: 'Avg score', value: '—', delta: 'scoring backend pending' },
-		{ label: 'Pending reviews', value: '—', delta: 'review workflow pending' },
+		{ label: 'Completion rate', value: `${completionRate}%`, delta: `${completed}/${QUEUE.length} sessions` },
+		{ label: 'Avg session', value: formatAvgDuration(durations), delta: formatTotalDuration(durations) },
+		{
+			label: 'Awaiting feedback',
+			value: awaiting === null ? '…' : String(awaiting),
+			delta: awaiting === null ? 'loading notes…' : awaitingFeedbackDelta(awaiting),
+		},
 	];
 
 	analytics.forEach((item) => {
@@ -110,75 +265,466 @@ function renderAnalytics() {
 		container.appendChild(block);
 	});
 
-	// TODO: replace with real weekly trend once historical metrics exist.
-	const TREND_BARS = [68, 72, 74, 80, 83, 87];
+	// Real weekly volume: sessions per week, last 6 weeks.
+	const { counts, starts } = sessionsPerWeek();
+	const peak = Math.max(1, ...counts);
 	const trendBars = document.getElementById('trend-bars');
 	trendBars.innerHTML = '';
 
-	TREND_BARS.forEach((value, index) => {
+	counts.forEach((count, index) => {
 		const bar = document.createElement('div');
-		bar.className = 'trend-bar';
-		bar.style.setProperty('--bar-height', `${value}%`);
-		bar.innerHTML = `<span>W${index + 1}</span>`;
+		bar.className = `trend-bar${index === counts.length - 1 ? ' is-current' : ''}`;
+		bar.style.setProperty('--bar-height', `${Math.max(8, Math.round((count / peak) * 100))}%`);
+		bar.title = `Week of ${weekLabel(starts[index])}: ${count} session${count === 1 ? '' : 's'}`;
+		bar.innerHTML = `<span>${weekLabel(starts[index])}</span>`;
 		trendBars.appendChild(bar);
 	});
 }
 
-function renderRoster() {
-	const roster = document.getElementById('trainee-roster');
-	roster.innerHTML = '';
+async function refreshAwaitingFeedback() {
+	// Prefer the exact backend aggregate; fall back to per-trainee notes.
+	try {
+		const res = await apiRequest('/sessions/feedback-coverage', { auth: true });
+		if (res.ok && res.data && Number.isFinite(res.data.awaitingTrainees)) {
+			COVERAGE = res.data;
+			renderAnalytics();
+			populateLiveDropdown();
+			return;
+		}
+	} catch {
+		// Older backend or offline — fall through to the notes cache.
+	}
+	// Load notes for every roster trainee (cached), then re-render cards.
+	await Promise.all(TRAINTEES.map((t) => ensureNotesLoaded(t.id)));
+	renderAnalytics();
+	populateLiveDropdown();
+}
 
+// Dropdown replaces the old roster markup but reuses its sort order
+// (live-first). One unified selectedTraineeId drives live + feedback +
+// sessions — the dropdown, session Select buttons and row clicks all write
+// the same variable.
+function populateLiveDropdown() {
+	const select = document.getElementById('live-trainee-select');
+	if (!select) return;
+	select.innerHTML = '';
+
+	if (TRAINTEES.length === 0) {
+		const opt = document.createElement('option');
+		opt.value = '';
+		opt.textContent = 'No active trainees';
+		opt.disabled = true;
+		opt.selected = true;
+		select.appendChild(opt);
+		select.disabled = true;
+		return;
+	}
+
+	select.disabled = false;
+	sortRoster();
 	TRAINTEES.forEach((trainee) => {
-		const row = document.createElement('button');
-		row.type = 'button';
-		row.className = `trainee-row${trainee.id === selectedTraineeId ? ' is-selected' : ''}`;
-		row.dataset.id = String(trainee.id);
-		row.innerHTML = `
-			<div>
-				<div class="trainee-name">${trainee.fullName}</div>
-				<div class="trainee-meta">${trainee.callsign} • ${trainee.currentExercise}<br>${relativeTime(trainee.lastActiveAt)}</div>
-			</div>
-			<span class="trainee-pill ${pillClass(trainee.status)}">${trainee.status}</span>
-		`;
-		row.addEventListener('click', () => {
-			selectedTraineeId = trainee.id;
-			renderRoster();
-			renderLiveMonitor();
-		});
-		roster.appendChild(row);
+		const opt = document.createElement('option');
+		opt.value = trainee.id;
+		const live = trainee.hasLive ? ' ● LIVE' : '';
+		opt.textContent = `${trainee.fullName} — ${trainee.callsign}${live}`;
+		if (trainee.id === selectedTraineeId) opt.selected = true;
+		select.appendChild(opt);
 	});
 }
 
-function renderLiveMonitor() {
-	const trainee = TRAINTEES.find((item) => item.id === selectedTraineeId)
-		|| TRAINTEES[0]
-		|| { fullName: 'No trainees assigned', currentExercise: '—', sessionStateLabel: '—', monitoring: PLACEHOLDER_MONITORING, warnings: [], riskLevel: 'Low' };
+function setSelectedTrainee(traineeId) {
+	selectedTraineeId = traineeId;
+	// Default to the trainee's live session, else their latest session.
+	const mine = QUEUE.filter((item) => item.traineeId === traineeId);
+	const pick = mine.find((item) => item.status === 'in_progress') || mine[0] || null;
+	selectedSessionId = pick ? pick.sessionId : null;
+	populateLiveDropdown();
+	updateSelection();
+	renderSessions();
+	startLiveTracking();
+}
 
-	document.getElementById('live-trainee-name').textContent = trainee.fullName;
-	document.getElementById('live-trainee-meta').textContent = `${trainee.currentExercise} • ${trainee.sessionStateLabel}`;
-	document.getElementById('feedback-target').textContent = `Selected trainee: ${trainee.fullName}`;
+// A specific session row was picked: pin both the trainee and that session.
+// Live tracking keeps following the trainee's in_progress session (if any);
+// the feedback snapshot shows this exact session's stored data.
+function setSelectedSession(sessionId) {
+	const item = QUEUE.find((i) => i.sessionId === sessionId);
+	if (!item) return;
+	selectedTraineeId = item.traineeId;
+	selectedSessionId = item.sessionId;
+	populateLiveDropdown();
+	updateSelection();
+	renderSessions();
+	startLiveTracking();
+}
 
-	const liveStats = document.getElementById('live-stats');
-	liveStats.innerHTML = '';
+function selectedSession() {
+	if (selectedSessionId) {
+		const pinned = QUEUE.find((i) => i.sessionId === selectedSessionId);
+		if (pinned && pinned.traineeId === selectedTraineeId) return pinned;
+	}
+	return newestSessionFor(selectedTraineeId);
+}
 
-	Object.entries(trainee.monitoring).forEach(([label, value]) => {
-		const stat = document.createElement('dl');
-		stat.className = 'live-stat';
-		stat.innerHTML = `<dt>${label.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase())}</dt><dd>${value}</dd>`;
-		liveStats.appendChild(stat);
+// Restored live-monitor body (old markup/logic from telemetry-pipeline,
+// adapted to the dropdown + current SessionReport shape).
+function liveSessionForSelected() {
+	if (!selectedTraineeId) return null;
+	const mine = QUEUE.filter((item) => item.traineeId === selectedTraineeId);
+	return mine.find((item) => item.status === 'in_progress') || null;
+}
+
+function livePollIntervalMs(session) {
+	try {
+		const key = (session?.scenario || 'hover').toLowerCase().includes('hover') ? 'hover' : 'hover';
+		const def = (typeof scenarioDef === 'function' && scenarioDef(key)) || null;
+		if (def && Number.isFinite(def.pollMs)) return def.pollMs;
+	} catch { /* fall through to default */ }
+	return 1000;
+}
+
+function setLiveState(text) {
+	const el = document.getElementById('live-state');
+	if (el) el.textContent = text;
+}
+
+function elapsedText() {
+	if (!liveStartedAt) return '—';
+	const s = Math.max(0, Math.floor((Date.now() - liveStartedAt.getTime()) / 1000));
+	return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function attemptLabelFor(sessionId) {
+	const s = QUEUE.find((item) => item.sessionId === sessionId);
+	if (!s) return '';
+	const same = QUEUE.filter((i) => i.traineeId === s.traineeId && (i.scenario || '') === (s.scenario || ''));
+	if (same.length <= 1) return '';
+	const idx = same.findIndex((i) => i.sessionId === sessionId);
+	return idx >= 0 ? ` • Attempt ${idx + 1}` : '';
+}
+
+// Tracked aspects for a scenario (from scenarios.js): same rows as live
+// data, with actual "—" until telemetry arrives. Shown instead of an empty
+// box so the trainer always sees what is being watched.
+function scenarioAspectMetrics(scenario) {
+	try {
+		const key = (scenario || 'hover').toLowerCase().includes('hover') ? 'hover' : 'hover';
+		const def = (typeof scenarioDef === 'function' && scenarioDef(key)) || null;
+		if (def && Array.isArray(def.metrics)) {
+			return def.metrics.map((m) => ({
+				key: m.key, label: m.label, unit: m.unit,
+				actual: null, target: m.target, tolerance: m.tolerance,
+				withinTol: null,
+			}));
+		}
+	} catch { /* fall through to live payload */ }
+	return null;
+}
+
+function renderLiveMetrics(report, fallbackScenario) {
+	const list = document.getElementById('live-stats');
+	if (!list) return;
+	list.innerHTML = '';
+	let metrics = Array.isArray(report?.metrics) ? report.metrics : [];
+	if (metrics.length === 0) {
+		// No values yet — show the tracked aspects (targets/tolerances)
+		// instead of an empty box. Never fake numbers: actual stays "—".
+		metrics = scenarioAspectMetrics(fallbackScenario || report?.scenario) || [];
+	}
+	if (metrics.length === 0) {
+		const empty = document.createElement('div');
+		empty.className = 'stat-item';
+		empty.innerHTML = '<dt>No metrics</dt><dd>—</dd>';
+		list.appendChild(empty);
+		return;
+	}
+	metrics.forEach((m) => {
+		const row = document.createElement('div');
+		const state = m.withinTol === null || m.withinTol === undefined ? '' : (m.withinTol ? ' within-tol' : ' out-of-tol');
+		row.className = `stat-item${state}`;
+		const actual = (m.actual === null || m.actual === undefined) ? '—' : `${m.actual} ${m.unit || ''}`.trim();
+		const hasBand = m.target !== null && m.target !== undefined;
+		const band = hasBand ? ` / ${m.target}${m.tolerance !== null && m.tolerance !== undefined ? ` ±${m.tolerance}` : ''} ${m.unit || ''}`.trim() : '';
+		row.innerHTML = '<dt></dt><dd></dd>';
+		row.querySelector('dt').textContent = m.label || m.key || 'metric';
+		row.querySelector('dd').textContent = band ? `${actual}${band}` : actual;
+		list.appendChild(row);
 	});
+}
 
-	const warnings = document.getElementById('live-warnings');
-	warnings.innerHTML = '';
-
-	(trainee.warnings || []).forEach((warning) => {
-		const item = document.createElement('li');
-		item.className = 'warning-item';
-		item.innerHTML = `<strong>Info</strong>${warning}`;
-		warnings.appendChild(item);
+function renderLiveWarnings(report) {
+	const list = document.getElementById('live-warnings');
+	if (!list) return;
+	list.innerHTML = '';
+	const warnings = Array.isArray(report?.warnings) ? report.warnings : [];
+	if (warnings.length === 0) {
+		const li = document.createElement('li');
+		li.className = 'warning-item';
+		li.textContent = 'No warnings — all within tolerance.';
+		list.appendChild(li);
+		return;
+	}
+	warnings.forEach((w) => {
+		const li = document.createElement('li');
+		li.className = 'warning-item';
+		li.textContent = String(w);
+		list.appendChild(li);
 	});
+}
 
+function renderLiveEmpty(message) {
+	const name = document.getElementById('live-trainee-name');
+	const meta = document.getElementById('live-trainee-meta');
+	const sub = document.getElementById('live-submeta');
+	if (name) name.textContent = '—';
+	if (meta) meta.textContent = message;
+	if (sub) sub.textContent = '';
+	renderLiveMetrics({ metrics: [] });
+	renderLiveWarnings({ warnings: ['Waiting for telemetry — showing tracked metrics.'] });
+}
+
+function renderLiveEnded(trainee, session) {
+	const ended = document.getElementById('live-ended');
+	if (ended) ended.hidden = false;
+	setLiveState('ENDED');
+	const name = document.getElementById('live-trainee-name');
+	const meta = document.getElementById('live-trainee-meta');
+	const sub = document.getElementById('live-submeta');
+	if (name) name.textContent = trainee ? trainee.fullName : '—';
+	if (meta) meta.textContent = session ? `${session.scenario || 'session'} • Session ended` : 'Session ended';
+	if (sub) sub.textContent = 'Final data below. Pick another trainee above.';
+}
+
+async function pollLiveOnce() {
+	if (liveInFlight) return;
+	const trainee = TRAINTEES.find((t) => t.id === selectedTraineeId) || null;
+	const target = liveSessionForSelected();
+	const ended = document.getElementById('live-ended');
+	if (ended) ended.hidden = true;
+
+	if (!trainee || !target) {
+		if (!trainee) {
+			renderLiveEmpty('No active trainees — start a session from the trainee pre-session page.');
+			setLiveState('STANDBY');
+		} else {
+			// Selected trainee has no in_progress session (ended or never started).
+			// Aspects of their latest scenario stay visible; values arrive live.
+			const latest = QUEUE.find((i) => i.traineeId === trainee.id) || null;
+			renderLiveEnded(trainee, latest);
+			renderLiveMetrics({ metrics: [] }, latest?.scenario);
+			renderLiveWarnings({ warnings: ['No live session for this trainee — showing tracked metrics. Start the bridge to stream values.'] });
+		}
+		stopLiveTimers();
+		return;
+	}
+
+	// New session selected — reset clock anchor.
+	if (liveSessionId !== target.sessionId) {
+		liveSessionId = target.sessionId;
+		liveStartedAt = parseDbDate(target.startedAt);
+		const name = document.getElementById('live-trainee-name');
+		const meta = document.getElementById('live-trainee-meta');
+		const sub = document.getElementById('live-submeta');
+		if (name) name.textContent = trainee.fullName;
+		if (meta) meta.textContent = `${target.scenario || 'session'} • Live`;
+		if (sub) sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(target.sessionId)}`;
+		setLiveState('LIVE');
+	}
+
+	liveInFlight = true;
+	try {
+		const res = await apiRequest(`/sessions/${target.sessionId}/live`, { auth: true });
+		if (res.ok && res.data) {
+			if (res.data.status === 'completed' || res.data.status === 'cancelled') {
+				renderLiveMetrics(res.data);
+				renderLiveWarnings(res.data);
+				renderLiveEnded(trainee, target);
+				stopLiveTimers();
+				return;
+			}
+			if (!liveStartedAt && res.data.startedAt) liveStartedAt = parseDbDate(res.data.startedAt);
+			const meta = document.getElementById('live-trainee-meta');
+			const sub = document.getElementById('live-submeta');
+			if (meta) meta.textContent = `${res.data.scenario || target.scenario || 'session'} • Live`;
+			if (sub) sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(target.sessionId)}`;
+			setLiveState('LIVE');
+			renderLiveMetrics(res.data);
+			renderLiveWarnings(res.data);
+		} else if (res.status === 404) {
+			renderLiveEnded(trainee, target);
+			stopLiveTimers();
+		} else {
+			console.error('[trainer] live poll failed', res.status, res.data);
+			setLiveState('RETRY');
+		}
+	} catch (err) {
+		console.error('[trainer] live poll error', err);
+		setLiveState('RETRY');
+	} finally {
+		liveInFlight = false;
+	}
+}
+
+function stopLiveTimers() {
+	if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+	if (liveClock) { clearInterval(liveClock); liveClock = null; }
+}
+
+function startLiveTracking() {
+	stopLiveTimers();
+	const target = liveSessionForSelected();
+	if (!target) {
+		pollLiveOnce();
+		return;
+	}
+	pollLiveOnce();
+	liveTimer = setInterval(pollLiveOnce, livePollIntervalMs(target));
+	liveClock = setInterval(() => {
+		const sub = document.getElementById('live-submeta');
+		if (sub && liveSessionId) {
+			const t = QUEUE.find((i) => i.sessionId === liveSessionId);
+			sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(liveSessionId)}`;
+		}
+	}, 1000);
+}
+
+function bindLiveDropdown() {
+	const select = document.getElementById('live-trainee-select');
+	if (!select) return;
+	select.addEventListener('change', () => {
+		if (!select.value) return;
+		setSelectedTrainee(select.value);
+	});
+}
+
+function updateSelection() {
+	const trainee = TRAINTEES.find((item) => item.id === selectedTraineeId) || TRAINTEES[0] || null;
+	const target = document.getElementById('feedback-target');
+	const input = document.getElementById('feedback-input');
+
+	// Keep dropdown in sync when selection comes from session table.
+	const select = document.getElementById('live-trainee-select');
+	if (select && trainee && select.value !== trainee.id) select.value = trainee.id;
+
+	if (!trainee) {
+		target.textContent = 'Selected trainee: —';
+		if (input) input.placeholder = 'No trainees assigned.';
+		selectedSessionId = null;
+		const box = document.getElementById('session-snapshot');
+		if (box) box.innerHTML = '';
+		renderFeedback();
+		return;
+	}
+
+	const current = selectedSession();
+	if (current) {
+		selectedSessionId = current.sessionId;
+		const when = formatShortDate(current.startedAt);
+		const dur = formatDurationMins(current.startedAt, current.endedAt);
+		target.textContent = `Selected: ${trainee.fullName} • ${current.scenario || 'session'} • ${when}${dur === '—' ? '' : ` • ${dur}`}`;
+		if (input) input.placeholder = `Feedback for ${trainee.fullName} — attaches to ${current.scenario || 'latest session'} (${when})…`;
+	} else {
+		selectedSessionId = null;
+		target.textContent = `Selected: ${trainee.fullName}`;
+		if (input) input.placeholder = `Feedback for ${trainee.fullName}…`;
+	}
+
+	renderSessionSnapshot();
 	renderFeedback();
+}
+
+// Previous live-monitoring data for the selected session, shown between the
+// "Selected:" line and the feedback box. Reads the stored session-end report
+// (GET /api/sessions/{id}/report) — same snapshot the trainee sees post-flight.
+async function renderSessionSnapshot() {
+	const box = document.getElementById('session-snapshot');
+	if (!box) return;
+	box.innerHTML = '';
+
+	const current = QUEUE.find((i) => i.sessionId === selectedSessionId);
+	if (!current) {
+		const empty = document.createElement('div');
+		empty.className = 'feedback-empty';
+		empty.textContent = 'Select a session from history to preview its data.';
+		box.appendChild(empty);
+		return;
+	}
+
+	if (current.status === 'in_progress') {
+		const live = document.createElement('div');
+		live.className = 'feedback-empty';
+		live.textContent = 'Session in progress — live values stream in Real-Time Tracking above; the graded report appears here after it ends.';
+		box.appendChild(live);
+		return;
+	}
+
+	const loading = document.createElement('div');
+	loading.className = 'feedback-empty';
+	loading.textContent = 'Loading session data…';
+	box.appendChild(loading);
+
+	const res = await apiRequest(`/sessions/${current.sessionId}/report`, { auth: true });
+	// Stale response (selection moved on while fetching) — drop it.
+	if (selectedSessionId !== current.sessionId) return;
+	box.innerHTML = '';
+
+	if (!res.ok || !res.data) {
+		const empty = document.createElement('div');
+		empty.className = 'feedback-empty';
+		empty.textContent = res.status === 404
+			? 'No graded report yet — grading runs when the session ends.'
+			: 'Could not load session data. Retry shortly.';
+		box.appendChild(empty);
+		return;
+	}
+
+	const report = res.data;
+	const head = document.createElement('div');
+	head.className = 'snapshot-head';
+	head.innerHTML = '<span></span><span class="trainee-pill pill-warn"></span>';
+	head.querySelector('span').textContent =
+		`${report.scenario || current.scenario || 'session'} • ${formatShortDate(report.startedAt || current.startedAt)}`;
+	const scorePill = head.querySelector('.trainee-pill');
+	scorePill.textContent = (report.score === null || report.score === undefined) ? 'Score —' : `Score ${report.score}`;
+	box.appendChild(head);
+
+	const metrics = Array.isArray(report.metrics) ? report.metrics : [];
+	if (metrics.length === 0) {
+		const empty = document.createElement('div');
+		empty.className = 'feedback-empty';
+		empty.textContent = 'No metrics stored for this session.';
+		box.appendChild(empty);
+	} else {
+		const list = document.createElement('div');
+		list.className = 'snapshot-metrics';
+		metrics.forEach((m) => {
+			const row = document.createElement('div');
+			const state = m.withinTol === null || m.withinTol === undefined ? '' : (m.withinTol ? ' within-tol' : ' out-of-tol');
+			row.className = `snapshot-metric${state}`;
+			const actual = (m.actual === null || m.actual === undefined) ? '—' : `${m.actual} ${m.unit || ''}`.trim();
+			const hasBand = m.target !== null && m.target !== undefined;
+			const band = hasBand ? ` / ${m.target}${m.tolerance !== null && m.tolerance !== undefined ? ` ±${m.tolerance}` : ''} ${m.unit || ''}`.trim() : '';
+			row.innerHTML = '<dt></dt><dd></dd>';
+			row.querySelector('dt').textContent = m.label || m.key || 'metric';
+			row.querySelector('dd').textContent = band ? `${actual}${band}` : actual;
+			list.appendChild(row);
+		});
+		box.appendChild(list);
+	}
+
+	const warnings = Array.isArray(report.warnings) ? report.warnings : [];
+	if (warnings.length > 0) {
+		const warn = document.createElement('div');
+		warn.className = 'snapshot-warnings';
+		warn.textContent = `${warnings.length} warning${warnings.length === 1 ? '' : 's'}: ${warnings[0]}`;
+		warn.title = warnings.join('\n');
+		box.appendChild(warn);
+	}
+}
+
+function filteredQueue() {
+	const rows = SESSION_FILTER === 'all' ? QUEUE : QUEUE.filter((i) => i.status === SESSION_FILTER);
+	return rows.slice(0, 30);
 }
 
 function renderSessions() {
@@ -187,20 +733,72 @@ function renderSessions() {
 
 	if (QUEUE.length === 0) {
 		const row = document.createElement('tr');
-		row.innerHTML = `<td colspan="4">No sessions logged for your trainees yet.</td>`;
+		row.innerHTML = `<td colspan="6">No sessions logged for your trainees yet.</td>`;
 		tbody.appendChild(row);
 		return;
 	}
 
-	QUEUE.forEach((item) => {
+	const rows = filteredQueue();
+	if (rows.length === 0) {
 		const row = document.createElement('tr');
-		row.innerHTML = `
-			<td>${item.traineeFullName}</td>
-			<td>${item.scenario}</td>
-			<td>${stateLabelFor(item.status)}</td>
-			<td><a class="queue-link" href="#">Open</a></td>
-		`;
+		row.innerHTML = `<td colspan="6">No sessions match this filter.</td>`;
 		tbody.appendChild(row);
+		return;
+	}
+
+	rows.forEach((item) => {
+		const row = document.createElement('tr');
+		row.className = `session-row${item.sessionId === selectedSessionId ? ' is-selected' : ''}`;
+		row.tabIndex = 0;
+		const pill = item.status === 'in_progress' ? 'pill-ok' : item.status === 'completed' ? 'pill-warn' : 'pill-warn';
+		if (item.status === 'cancelled') row.classList.add('is-cancelled');
+		row.innerHTML = `
+			<td></td>
+			<td></td>
+			<td><time></time></td>
+			<td></td>
+			<td><span class="trainee-pill ${pill}"></span></td>
+			<td></td>
+		`;
+		row.children[0].textContent = item.traineeFullName;
+		row.children[1].textContent = item.scenario;
+		const time = row.querySelector('time');
+		time.textContent = relativeTime(item.startedAt);
+		try { time.dateTime = parseDbDate(item.startedAt).toISOString(); } catch { /* keep text only */ }
+		time.title = parseDbDate(item.startedAt).toLocaleString('en-GB');
+		row.children[3].textContent = formatDurationMins(item.startedAt, item.endedAt);
+		row.querySelector('.trainee-pill').textContent = stateLabelFor(item.status);
+		const open = document.createElement('button');
+		open.type = 'button';
+		open.className = 'queue-link';
+		open.textContent = 'Select';
+		open.addEventListener('click', (ev) => {
+			ev.stopPropagation();
+			setSelectedSession(item.sessionId);
+		});
+		row.children[5].appendChild(open);
+		const select = () => {
+			setSelectedSession(item.sessionId);
+		};
+		row.addEventListener('click', select);
+		row.addEventListener('keydown', (ev) => {
+			if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(); }
+		});
+		tbody.appendChild(row);
+	});
+
+	const total = document.getElementById('session-count');
+	if (total) total.textContent = `${rows.length} of ${QUEUE.length}`;
+}
+
+function bindSessionFilters() {
+	document.querySelectorAll('.session-filters .chip').forEach((chip) => {
+		chip.addEventListener('click', () => {
+			document.querySelectorAll('.session-filters .chip').forEach((c) => c.classList.remove('is-active'));
+			chip.classList.add('is-active');
+			SESSION_FILTER = chip.dataset.filter || 'all';
+			renderSessions();
+		});
 	});
 }
 
@@ -213,6 +811,7 @@ async function ensureNotesLoaded(traineeId) {
 			author: n.author,
 			time: parseDbDate(n.createdAt).toLocaleTimeString('en-GB', { hour12: false }),
 			note: n.note,
+			sessionId: n.sessionId || null,
 		}))
 		: [];
 }
@@ -241,17 +840,51 @@ async function renderFeedback() {
 		return;
 	}
 
+	// Group by session when sessionId is known (new backend), else flat list.
+	const hasSessionIds = traineeFeedback.some((e) => e.sessionId);
+	if (!hasSessionIds) {
+		traineeFeedback.forEach((entry) => {
+			const item = document.createElement('li');
+			item.className = 'feedback-item';
+			item.innerHTML = `
+				<div class="feedback-item-head"><span></span><span></span></div>
+				<div class="feedback-item-body"></div>
+			`;
+			item.querySelector('.feedback-item-head span').textContent = entry.author;
+			item.querySelector('.feedback-item-head span:last-child').textContent = entry.time;
+			// textContent avoids injecting anything typed into the note box.
+			item.querySelector('.feedback-item-body').textContent = entry.note;
+			list.appendChild(item);
+		});
+		return;
+	}
+
+	const groups = new Map(); // sessionId|null -> entries
 	traineeFeedback.forEach((entry) => {
-		const item = document.createElement('li');
-		item.className = 'feedback-item';
-		item.innerHTML = `
-			<div class="feedback-item-head"><span>${entry.author}</span><span>${entry.time}</span></div>
-			<div class="feedback-item-body"></div>
-		`;
-		// textContent avoids injecting anything typed into the note box.
-		item.querySelector('.feedback-item-body').textContent = entry.note;
-		list.appendChild(item);
+		const key = entry.sessionId || 'other';
+		if (!groups.has(key)) groups.set(key, []);
+		groups.get(key).push(entry);
 	});
+	for (const [sessionId, entries] of groups) {
+		const header = document.createElement('li');
+		header.className = 'feedback-group';
+		header.textContent = sessionId === 'other'
+			? 'Other notes'
+			: `${sessionScenarioName(sessionId)} • ${entries.length} note${entries.length === 1 ? '' : 's'}`;
+		list.appendChild(header);
+		entries.forEach((entry) => {
+			const item = document.createElement('li');
+			item.className = 'feedback-item';
+			item.innerHTML = `
+				<div class="feedback-item-head"><span></span><span></span></div>
+				<div class="feedback-item-body"></div>
+			`;
+			item.querySelector('.feedback-item-head span').textContent = entry.author;
+			item.querySelector('.feedback-item-head span:last-child').textContent = entry.time;
+			item.querySelector('.feedback-item-body').textContent = entry.note;
+			list.appendChild(item);
+		});
+	}
 }
 
 function bindFeedbackButton() {
@@ -261,11 +894,12 @@ function bindFeedbackButton() {
 		const text = input.value.trim();
 		if (!text || !selectedTraineeId) return;
 
-		// Feedback attaches to the selected trainee's most recent session.
-		const newest = QUEUE.find((item) => item.traineeId === selectedTraineeId);
-		if (!newest) return;
+		// Feedback attaches to the selected session (pinned by history row),
+		// falling back to the trainee's most recent session.
+		const target = selectedSession() || newestSessionFor(selectedTraineeId);
+		if (!target) return;
 
-		const res = await apiRequest(`/sessions/${newest.sessionId}/feedback`, {
+		const res = await apiRequest(`/sessions/${target.sessionId}/feedback`, {
 			method: 'POST',
 			auth: true,
 			body: { note: text },
@@ -277,8 +911,11 @@ function bindFeedbackButton() {
 		}
 
 		delete FEEDBACK_CACHE[selectedTraineeId];
+		COVERAGE = null;
 		input.value = '';
 		await renderFeedback();
+		renderAnalytics();
+		await refreshAwaitingFeedback();
 	});
 }
 
@@ -295,17 +932,27 @@ async function loadLiveData() {
 
 	QUEUE = res.data;
 	buildRoster();
-	selectedTraineeId = TRAINTEES.length > 0 ? TRAINTEES[0].id : null;
+	if (!selectedTraineeId || !TRAINTEES.some((t) => t.id === selectedTraineeId)) {
+		// Prefer a live trainee on first load, else first in sorted order.
+		const liveFirst = TRAINTEES.find((t) => t.hasLive) || TRAINTEES[0];
+		selectedTraineeId = liveFirst ? liveFirst.id : null;
+	}
 
 	renderAnalytics();
-	renderRoster();
-	renderLiveMonitor();
+	populateLiveDropdown();
+	updateSelection();
 	renderSessions();
+	startLiveTracking();
+	// Fill the awaiting-feedback card once notes arrive (cached for feedback panel).
+	refreshAwaitingFeedback();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
 	loadLiveData();
+	bindLiveDropdown();
+	bindSessionFilters();
 	bindFeedbackButton();
 	bindLogoutButton();
+	window.addEventListener('beforeunload', stopLiveTimers);
 });
 }

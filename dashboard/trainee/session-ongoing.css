@@ -1,0 +1,52 @@
+/* CockpitSim — Session Ongoing page.
+   Layout classes (hud-bar, dashboard-grid, panel-*) come from the shared
+   stylesheet; only the live flags are page-specific. Tokens referenced here
+   are locked in shared/css/main.css — values never redefined. */
+.live-flags {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  background: var(--bg-panel-raised);
+}
+
+.flag-ok {
+  border-color: var(--status-ok);
+  color: var(--status-ok);
+}
+
+.flag-breach {
+  border-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+.flag-wait {
+  color: var(--text-muted);
+}
+
+#bridge-cmd {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--accent-cyan);
+  user-select: all;
+}

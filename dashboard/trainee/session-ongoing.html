@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CockpitSim - Session Ongoing</title>
+  <link rel="stylesheet" href="../shared/css/main.css">
+  <link rel="stylesheet" href="../shared/css/logout-modal.css">
+  <link rel="stylesheet" href="pre-session.css">
+  <link rel="stylesheet" href="post-session.css">
+  <link rel="stylesheet" href="session-ongoing.css">
+</head>
+<body>
+  <div class="ongoing-screen scanlines">
+    <header class="hud-bar">
+      <div class="hud-item">
+        <span class="hud-label">CALLSIGN</span>
+        <span class="hud-value" id="hud-username">TRAINEE</span>
+      </div>
+      <div class="hud-item hud-center">
+        <span class="hud-label">STATUS</span>
+        <span class="hud-value hud-status" id="hud-status">LIVE</span>
+      </div>
+      <div class="hud-item hud-actions">
+        <button class="logout-btn" id="logout-btn" type="button">Logout</button>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="panel panel-live" aria-labelledby="live-heading">
+        <div class="panel-corner panel-corner-tl"></div>
+        <div class="panel-corner panel-corner-br"></div>
+        <h2 id="live-heading" class="panel-title">
+          <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 7v5l3 2"></path>
+          </svg>
+          <span>01 // SESSION ONGOING</span>
+        </h2>
+        <div class="summary-hero">
+          <div>
+            <div class="summary-label">Exercise</div>
+            <div class="summary-value" id="ongoing-exercise">—</div>
+          </div>
+          <div class="summary-pill" id="ongoing-state">CONNECTING</div>
+        </div>
+        <dl class="profile-list">
+          <div class="profile-row">
+            <dt>Session</dt>
+            <dd id="ongoing-session">—</dd>
+          </div>
+          <div class="profile-row">
+            <dt>Elapsed</dt>
+            <dd id="elapsed-time">00:00</dd>
+          </div>
+          <div class="profile-row">
+            <dt>Tolerance</dt>
+            <dd id="tol-status">Waiting for telemetry…</dd>
+          </div>
+          <div class="profile-row">
+            <dt>Warnings</dt>
+            <dd id="warning-count">—</dd>
+          </div>
+        </dl>
+        <ul class="live-flags" id="live-flags"></ul>
+        <p class="upcoming-hint" id="bridge-cmd-wrap" hidden>Run this in a terminal (repo root) to feed this session:<br><code id="bridge-cmd"></code></p>
+        <p class="upcoming-hint" id="ongoing-hint">
+          Keep flying — press END SESSION when done, or just close the app and the session closes itself.
+        </p>
+        <button class="btn-start-session" id="btn-end-session" type="button">
+          <span>END SESSION</span>
+        </button>
+        <p class="upcoming-hint"><a class="queue-link" href="./pre-session.html">Back to sessions</a></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/auth.js"></script>
+  <script src="../shared/js/logout-modal.js"></script>
+  <script src="../shared/js/scenarios.js"></script>
+  <script src="session-ongoing.js"></script>
+</body>
+</html>

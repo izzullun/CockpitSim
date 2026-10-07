@@ -91,6 +91,39 @@ namespace CockpitSim.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("CockpitSim.Models.DashboardReport", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("GeneratedBy")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("generated_by");
+
+                    b.Property<string>("MetricsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("metrics_json");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("summary");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("dashboard_reports");
+                });
+
             modelBuilder.Entity("CockpitSim.Models.SessionNote", b =>
                 {
                     b.Property<int>("Id")

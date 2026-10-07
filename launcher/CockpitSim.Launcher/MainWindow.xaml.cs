@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Net.Http;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 
@@ -8,23 +7,31 @@ namespace CockpitSim.Launcher;
 /// <summary>
 /// Startup flow:
 ///   1. GET {BackendBaseUrl}/api/health (3s timeout)
-///   2. Success → initialize WebView2 and navigate to the backend-hosted login page.
-///   3. Failure → show the error overlay with a Retry button.
-/// The backend is expected to already be running (Windows Service on the FYP
-/// PC, `dotnet run` on dev machines) — the launcher never starts it itself.
+///   2. Not healthy → auto-start the backend (hidden child, .env token +
+///      Influx preflight, mirrors Start-CockpitSim.cmd) and wait up to 30s.
+///   3. Healthy → initialize WebView2 and navigate to the backend-hosted login page.
+///   4. Still down → show the error overlay with a Retry button.
+/// Single-click: double-clicking the launcher alone is enough.
 /// </summary>
 public partial class MainWindow : Window
 {
-    private static readonly TimeSpan HealthTimeout = TimeSpan.FromSeconds(3);
-
     private readonly LauncherConfig _config = LauncherConfig.Load();
+    private readonly BackendHost _backend;
+    private readonly BridgeHost _bridge;
     private bool _webViewReady;
     private bool _webviewSettingsApplied;
 
     public MainWindow()
     {
+        _backend = new BackendHost(_config);
+        _bridge = new BridgeHost(_config);
         InitializeComponent();
         Loaded += MainWindow_Loaded;
+        Closed += (_, _) =>
+        {
+            _bridge.Dispose();
+            _backend.Dispose();
+        };
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -41,33 +48,16 @@ public partial class MainWindow : Window
 
     private async Task ConnectAsync()
     {
-        if (await IsBackendHealthyAsync())
+        StatusText.Text = "STARTING COCKPITSIM SERVER…";
+        if (await _backend.EnsureRunningAsync(msg => StatusText.Text = msg.ToUpperInvariant()))
         {
             await ShowDashboardAsync();
         }
         else
         {
             StatusPanel.Visibility = Visibility.Collapsed;
-            ErrorDetail.Text = $"Tried: {_config.HealthUrl}";
+            ErrorDetail.Text = $"Tried: {_config.HealthUrl} (the app tried to start the backend automatically)";
             ErrorOverlay.Visibility = Visibility.Visible;
-        }
-    }
-
-    private async Task<bool> IsBackendHealthyAsync()
-    {
-        try
-        {
-            using var http = new HttpClient { Timeout = HealthTimeout };
-            using var response = await http.GetAsync(_config.HealthUrl);
-            return response.IsSuccessStatusCode;
-        }
-        catch (HttpRequestException)
-        {
-            return false;
-        }
-        catch (TaskCanceledException)
-        {
-            return false;
         }
     }
 
@@ -101,6 +91,10 @@ public partial class MainWindow : Window
         ApplyWebViewSettings();
         WebView.CoreWebView2.Navigate(_config.LoginUrl);
         WebView.Visibility = Visibility.Visible;
+
+        // Backend is up (we only get here past the health gate), so the
+        // bridge can discover sessions immediately — no session id needed.
+        _bridge.EnsureRunning();
     }
 
     private void ApplyWebViewSettings()

@@ -25,6 +25,41 @@
 		</header>
 
 		<main class="dashboard-grid">
+			<section class="panel panel-live" aria-labelledby="live-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="live-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M2 12h4l3-8 4 16 3-8h6"></path>
+					</svg>
+					<span>01 // REAL-TIME TRACKING</span>
+				</h2>
+				<div class="live-controls">
+					<label class="live-select-label" for="live-trainee-select">Trainee</label>
+					<div class="live-select-wrap">
+						<select id="live-trainee-select" class="live-select" aria-label="Select trainee to track live">
+							<option value="">Loading trainees…</option>
+						</select>
+						<svg class="live-select-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+							<path d="M6 9l6 6 6-6"></path>
+						</svg>
+					</div>
+					<span class="live-state" id="live-state">STANDBY</span>
+				</div>
+				<article class="live-monitor" aria-labelledby="live-monitor-heading">
+					<h3 id="live-monitor-heading" class="live-monitor-title">Selected trainee</h3>
+					<div class="live-monitor-name" id="live-trainee-name">—</div>
+					<div class="live-monitor-meta" id="live-trainee-meta">—</div>
+					<div class="live-submeta" id="live-submeta">—</div>
+					<div class="live-ended" id="live-ended" hidden>Session ended — showing last data. Pick another trainee above.</div>
+					<dl class="live-stats" id="live-stats"></dl>
+					<div class="warnings-box">
+						<div class="warnings-title">Warnings</div>
+						<ul id="live-warnings" class="warnings-list"></ul>
+					</div>
+				</article>
+			</section>
+
 			<section class="panel panel-analytics" aria-labelledby="analytics-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
@@ -36,44 +71,12 @@
 						<rect x="12" y="9" width="3" height="10"></rect>
 						<rect x="17" y="6" width="3" height="13"></rect>
 					</svg>
-					<span>01 // PERFORMANCE ANALYTICS</span>
+					<span>02 // PERFORMANCE ANALYTICS</span>
 				</h2>
 				<div id="analytics-cards" class="analytics-cards"></div>
-				<div class="mini-chart" aria-label="Overall trend summary">
-					<div class="mini-chart-label">Overall trend</div>
+				<div class="mini-chart" aria-label="Sessions per week, last 6 weeks">
+					<div class="mini-chart-label">Sessions / week (last 6 weeks)</div>
 					<div id="trend-bars" class="trend-bars"></div>
-				</div>
-			</section>
-
-			<section class="panel panel-roster" aria-labelledby="roster-heading">
-				<div class="panel-corner panel-corner-tl"></div>
-				<div class="panel-corner panel-corner-br"></div>
-				<h2 id="roster-heading" class="panel-title">
-					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-						<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-						<circle cx="9" cy="7" r="4"></circle>
-						<path d="M21 21v-2a3 3 0 0 0-3-3h-3"></path>
-					</svg>
-					<span>02 // ALL TRAINEES</span>
-				</h2>
-				<div class="roster-layout">
-					<div class="roster-list-wrap">
-						<div class="panel-subtitle">Roster</div>
-						<div id="trainee-roster" class="trainee-roster"></div>
-					</div>
-					<div class="live-monitor-wrap">
-						<div class="panel-subtitle">Live monitoring</div>
-						<article class="live-monitor" aria-labelledby="live-monitor-heading">
-							<h3 id="live-monitor-heading" class="live-monitor-title">Selected trainee</h3>
-							<div class="live-monitor-name" id="live-trainee-name">Adam Haikal</div>
-							<div class="live-monitor-meta" id="live-trainee-meta">Autorotation Recovery • In session</div>
-							<dl class="live-stats" id="live-stats"></dl>
-							<div class="warnings-box">
-								<div class="warnings-title">Warnings</div>
-								<ul id="live-warnings" class="warnings-list"></ul>
-							</div>
-						</article>
-					</div>
 				</div>
 			</section>
 
@@ -85,25 +88,31 @@
 						<rect x="4" y="5" width="16" height="14" rx="2"></rect>
 						<path d="M8 9h8M8 12h5M8 15h6"></path>
 					</svg>
-					<span>03 // SESSION MANAGEMENT</span>
+					<span>03 // SESSION HISTORY</span>
+
 				</h2>
-				<div class="session-actions">
-					<button class="action-btn action-primary" type="button">Assign session</button>
-					<button class="action-btn" type="button">Pause session</button>
-					<button class="action-btn" type="button">Resume session</button>
-					<button class="action-btn action-danger" type="button">End session</button>
+				<div class="session-filters" role="group" aria-label="Filter sessions">
+					<button class="chip is-active" type="button" data-filter="all">All</button>
+					<button class="chip" type="button" data-filter="in_progress">Live</button>
+					<button class="chip" type="button" data-filter="completed">Completed</button>
+					<button class="chip" type="button" data-filter="scheduled">Scheduled</button>
+					<span class="session-count" id="session-count"></span>
 				</div>
+				<div class="session-table-wrap">
 				<table class="session-table">
 					<thead>
 						<tr>
 							<th scope="col">Trainee</th>
 							<th scope="col">Exercise</th>
+							<th scope="col">Date</th>
+							<th scope="col">Duration</th>
 							<th scope="col">State</th>
-							<th scope="col">Trainer action</th>
+							<th scope="col">Focus</th>
 						</tr>
 					</thead>
 					<tbody id="session-body"></tbody>
 				</table>
+				</div>
 			</section>
 
 			<section class="panel panel-feedback" aria-labelledby="feedback-heading">
@@ -116,12 +125,12 @@
 					</svg>
 					<span>04 // FEEDBACK</span>
 				</h2>
-				<p class="feedback-target" id="feedback-target">Selected trainee: Adam Haikal</p>
+				<p class="feedback-target" id="feedback-target">Selected trainee: —</p>
+				<div id="session-snapshot" class="session-snapshot" aria-live="polite"></div>
 				<label class="feedback-label" for="feedback-input">Provide feedback</label>
-				<textarea id="feedback-input" class="feedback-input" rows="4" placeholder="Example: Good job on the flare timing, but keep the descent smoother."></textarea>
+				<textarea id="feedback-input" class="feedback-input" rows="4" placeholder="Select a trainee to attach feedback to their latest session."></textarea>
 				<div class="feedback-controls">
 					<button class="action-btn action-primary" type="button" id="send-feedback-btn">Send feedback</button>
-					<button class="action-btn" type="button">Save note</button>
 				</div>
 				<div class="feedback-stream-wrap">
 					<div class="panel-subtitle">Recent comments</div>
@@ -134,6 +143,7 @@
 	<script src="../shared/js/api.js"></script>
 	<script src="../shared/js/auth.js"></script>
 	<script src="../shared/js/logout-modal.js"></script>
+	<script src="../shared/js/scenarios.js"></script>
 	<script src="trainer-dashboard.js"></script>
 </body>
 </html>

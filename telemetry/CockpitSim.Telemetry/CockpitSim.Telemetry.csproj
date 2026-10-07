@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CockpitSim.Telemetry</RootNamespace>
+    <!-- net8.0-windows + WinForms: the SimConnect adapter needs a hidden
+         window handle to pump sim messages (see MsfsSimConnectSource). -->
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <!-- MSFS 2020 SimConnect client, committed under telemetry/libs so CI and any
+       dev PC build without the SDK installed (verify the SDK EULA permits
+       client-DLL redistribution before distributing beyond the team).
+       Both DLLs are copied next to the exe so the app folder is self-contained. -->
+  <ItemGroup>
+    <Reference Include="Microsoft.FlightSimulator.SimConnect">
+      <HintPath>..\libs\Microsoft.FlightSimulator.SimConnect.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="..\libs\SimConnect.dll">
+      <Link>SimConnect.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

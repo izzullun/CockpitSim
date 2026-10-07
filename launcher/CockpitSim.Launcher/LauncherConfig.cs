@@ -14,6 +14,26 @@ public sealed class LauncherConfig
     /// <summary>Root URL of the CockpitSim backend (no trailing slash).</summary>
     public string BackendBaseUrl { get; set; } = DefaultBaseUrl;
 
+    /// <summary>
+    /// Auto-start the telemetry bridge as a hidden child process while the app
+    /// runs. The bridge self-discovers sessions (GET /api/bridge/active), so no
+    /// session id is passed — disable only for debugging.
+    /// </summary>
+    public bool AutoStartBridge { get; set; } = true;
+
+    /// <summary>Explicit bridge exe path. When empty, resolved next to the app.</summary>
+    public string BridgeExePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Auto-start the backend as a hidden child process when
+    /// GET /api/health fails at launch (mirrors Start-CockpitSim.cmd).
+    /// Disable only when a backend is managed externally.
+    /// </summary>
+    public bool AutoStartBackend { get; set; } = true;
+
+    /// <summary>Explicit backend exe path. When empty, resolved next to the app.</summary>
+    public string BackendExePath { get; set; } = string.Empty;
+
     public string HealthUrl => $"{BackendBaseUrl}/api/health";
     public string LoginUrl => $"{BackendBaseUrl}/dashboard/login/login.html";
 
