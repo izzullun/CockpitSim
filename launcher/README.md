@@ -4,6 +4,13 @@ The CockpitSim desktop app. This is what trainees and trainers actually open on
 the PC — instead of typing a website address into a browser, they just
 double-click the CockpitSim icon and the app opens in its own window.
 
+**One click runs everything.** Double-clicking the app (the desktop
+**CockpitSim** shortcut, or `CockpitSim.Launcher.exe` directly) starts the
+backend if needed, warms InfluxDB, starts the telemetry bridge, and opens the
+dashboard — you don't need `Start-CockpitSim.cmd` day-to-day. To create the
+desktop shortcut, run `packaging/New-CockpitSimShortcut.ps1` once (see
+`packaging/README.md`).
+
 Behind the scenes the app shows the same dashboard website as before, just
 inside a dedicated window. This means any updates made to the dashboard
 automatically appear in the app too — nothing extra to maintain.

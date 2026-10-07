@@ -99,9 +99,14 @@ after creating it (environment is read at startup).
 
 1. Start Docker Desktop (wait for "Engine running"), then
    `docker start influxdb-cockpitsim` if it isn't running.
-2. Double-click **`Start-CockpitSim.cmd`**. It checks Influx (warns, never
-   blocks), starts the backend if needed, waits for healthy, and opens the app.
-   First launch takes ~30s (database migrates + seeds itself).
+2. Double-click the desktop **CockpitSim** shortcut — the app checks Influx
+   (warns, never blocks), starts the backend if needed, starts the telemetry
+   bridge, and opens the dashboard. First launch takes ~30s (database migrates
+   + seeds itself). **One-time:** create that shortcut by running
+   `packaging/New-CockpitSimShortcut.ps1` (it just points at
+   `CockpitSimApp/launcher/CockpitSim.Launcher.exe`).
+   `Start-CockpitSim.cmd` does the same thing — the shortcut is simply the
+   app-icon equivalent.
 3. Log in (demo accounts below).
 
 **Reset demo data:** stop everything (`Stop-CockpitSim.cmd`), delete
