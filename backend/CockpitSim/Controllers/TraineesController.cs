@@ -36,7 +36,8 @@ public class TraineesController : ControllerBase
             {
                 Author = u.FullName,
                 CreatedAt = n.CreatedAt,
-                Note = n.Note
+                Note = n.Note,
+                SessionId = n.SessionId
             })
             .ToList();
 
