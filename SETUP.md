@@ -158,10 +158,13 @@ after creating it (environment is read at startup).
    - **03 Session timeline** — start, first-breach moments (`mm:ss`), graded end.
    - **04 Next actions** — auto-generated verdict + coaching tip for the
      weakest metric, plus "Run another session".
-6. **No-telemetry safety net:** a session older than ~90s with 60s of silence
-   is auto-ended and graded honestly (`—`, "No telemetry was captured") —
-   never fake numbers. Closing the app kills the bridge, so abandoned sessions
-   close themselves the same way.
+6. **No-telemetry safety net:** a session older than ~15 min with 10 min of
+   silence is auto-ended and graded honestly (`—`, "No telemetry was captured")
+   — never fake numbers. The thresholds are config-driven
+   (`Telemetry:MinimumAgeSeconds` / `Telemetry:SilenceSeconds` in the backend
+   `appsettings.json`) and generous on purpose so a slow MSFS-via-Steam cold
+   boot isn't killed mid-launch. Closing the app kills the bridge, so abandoned
+   sessions still close themselves the same way.
 
 ### Trainer loop
 
@@ -170,6 +173,37 @@ per-trainee session history. **Feedback** on a trainee or session — trainees
 read it in their post-session notes. Feedback attaches to the newest session;
 notes stay live even though scores are frozen snapshots. Completed reports can
 also be read via the API (`GET /api/sessions/{id}/live` with a trainer JWT).
+
+### Trainer watches from a second PC (over the LAN)
+
+Everything runs on the **sim PC** (backend + bridge + MSFS + InfluxDB); the
+trainer PC just opens the same dashboard in a browser. No trainer-side install.
+
+1. **The backend must listen on the LAN, not just loopback.** `localhost` is
+   not your LAN IP — a backend bound to `localhost:5247` is invisible to other
+   PCs no matter what the firewall allows. The published bundle therefore binds
+   `0.0.0.0:5247` (all interfaces) via `backend/appsettings.json` `Urls`, and
+   the launcher starts the backend with `ASPNETCORE_URLS =
+   launcher/appsettings.json` `BackendBindUrl` (default `http://0.0.0.0:5247`).
+    `appsettings.Development.json` binds `0.0.0.0:5247` too, so every launch
+    path (dev `dotnet run`, bundle, and launcher) listens on the LAN.
+2. **Open the firewall once** (PowerShell as Administrator, on the sim PC):
+   `netsh advfirewall firewall add rule name="CockpitSim API 5247" dir=in
+   action=allow protocol=TCP localport=5247`
+3. **Find the sim PC's IP** (`ipconfig` → IPv4, e.g. `10.100.136.136`).
+4. **Trainer PC:** browse to `http://<sim-pc-ip>:5247/dashboard/login/login.html`
+   and log in as a trainer. Sanity check first: `http://<sim-pc-ip>:5247/api/health`
+   should return `{"status":"ok"}`.
+
+Security note: `0.0.0.0` exposes the API on the LAN (JWT login still required;
+the bridge-discovery endpoint `/api/bridge/active` stays loopback-only). Use
+this on a **closed demo LAN only** — set `BackendBindUrl` back to
+`http://localhost:5247` to return to single-PC.
+
+**Run the bridge LIVE, not mock, on the sim PC** so trainees are graded on real
+MSFS inputs: the launcher auto-starts it, or run
+`telemetry/CockpitSim.Telemetry.exe --rate 10` (no `--mock`). `--mock` is only
+for testing the plumbing without the sim.
 
 ### Telemetry & grading contract (short version)
 
