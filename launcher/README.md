@@ -46,6 +46,16 @@ backend ever runs on a different address or port, edit `appsettings.json`
 
 ## Notes
 
+- The app launches MSFS 2020 for you: when a trainee presses **START SESSION**,
+  the dashboard tells the app over WebView2 messaging and the app opens the sim
+  through Steam (`steam://rungameid/1250410`). No Steam.exe/MSFS paths are
+  hardcoded — the Steam URI handler does the work, and no Steam GUI is
+  automated. The app keeps running while you fly, watches the simulator
+  process, and when MSFS closes it tells the dashboard so the session ends and
+  the report is generated automatically. Configure via `appsettings.json`:
+  `SimulatorAppId`, `SimulatorProcessNames` (defaults MSFS 2020), and
+  `AutoLaunchSimulator` (`false` leaves launching manual). MSFS 2024 can be
+  added later by extending those values.
 - The app auto-starts the telemetry bridge as a hidden child process (mock
   hover feed, self-discovers the active session — no session id needed) and
   stops it on exit. Disable with `"AutoStartBridge": false` in

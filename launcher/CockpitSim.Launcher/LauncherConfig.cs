@@ -34,6 +34,22 @@ public sealed class LauncherConfig
     /// <summary>Explicit backend exe path. When empty, resolved next to the app.</summary>
     public string BackendExePath { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Launch the simulator (via its Steam rungameid URI) when the dashboard
+    /// sends the startSimulator command. Disable to leave MSFS launches manual.
+    /// </summary>
+    public bool AutoLaunchSimulator { get; set; } = true;
+
+    /// <summary>Steam App ID used to build the steam://rungameid URI. 1250410 = MSFS 2020.</summary>
+    public string SimulatorAppId { get; set; } = "1250410";
+
+    /// <summary>
+    /// Process names (no extension) the watcher polls for to know the sim is
+    /// alive and to detect its exit. Config-driven so MSFS 2024 / the Store
+    /// edition can be added later without a recompile.
+    /// </summary>
+    public string[] SimulatorProcessNames { get; set; } = new[] { "FlightSimulator" };
+
     public string HealthUrl => $"{BackendBaseUrl}/api/health";
     public string LoginUrl => $"{BackendBaseUrl}/dashboard/login/login.html";
 

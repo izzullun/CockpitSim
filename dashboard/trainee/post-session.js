@@ -55,7 +55,11 @@ function renderTelemetry(report) {
     const term = document.createElement("div");
     term.className = "stat-item";
     const flag = m.withinTol === false ? " ⚠" : "";
-    term.innerHTML = `<dt>${m.label}${flag}</dt><dd>${fmtActual(m)} <span class="stat-target">target ${fmtTarget(m)}</span></dd>`;
+    // Graded rows show the acceptable range ("aim 3–7 ft"); informational rows
+    // (no target) show only their value — fmtTarget returns "" so no span.
+    const target = fmtTarget(m);
+    const targetHtml = target ? ` <span class="stat-target">${target}</span>` : "";
+    term.innerHTML = `<dt>${m.label}${flag}</dt><dd>${fmtActual(m)}${targetHtml}</dd>`;
     list.appendChild(term);
   });
   if (report.warnings.length > 0) {

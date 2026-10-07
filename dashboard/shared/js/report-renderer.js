@@ -10,11 +10,18 @@ function fmtActual(metric) {
   return `${metric.actual} ${metric.unit || ""}`.trim();
 }
 
+// Graded (target ± tolerance) → "aim <low>–<high> <unit>" — the acceptable
+// range spelled out, not the math. Informational metrics (no target) → "" so
+// the caller hides the target span entirely (no dangling "target —").
 function fmtTarget(metric) {
-  if (metric.target === null || metric.target === undefined) return "—";
-  const tol = metric.tolerance !== null && metric.tolerance !== undefined
-    ? ` ±${metric.tolerance}` : "";
-  return `${metric.target}${tol} ${metric.unit || ""}`.trim();
+  if (metric.target === null || metric.target === undefined) return "";
+  const unit = metric.unit || "";
+  const tol = metric.tolerance;
+  if (tol === null || tol === undefined) return `aim ${metric.target} ${unit}`.trim();
+  const round2 = (n) => Math.round(n * 100) / 100;
+  const low = round2(metric.target - tol);
+  const high = round2(metric.target + tol);
+  return `aim ${low}–${high} ${unit}`.trim();
 }
 
 // 01 // summary cards from a report: flight time, completion, score, risk.
