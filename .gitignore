@@ -22,3 +22,5 @@ Thumbs.db
 
 # Single-click local bundle (dotnet publish output + local SQLite copy)
 CockpitSimApp/
+# Transfer zips of the bundle (built locally, carried to the other PC)
+CockpitSimApp-*.zip
