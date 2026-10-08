@@ -3,7 +3,7 @@
 // auth header handling stay in one place.
 
 // TODO: move to a config file when the backend gets a fixed deploy URL.
-const API_BASE_URL = 'http://localhost:5247/api';
+const API_BASE_URL = window.location.port === '5247' ? `${window.location.origin}/api` : 'http://localhost:5247/api';
 
 // Backend timestamps are stored in UTC, but SQLite returns them WITHOUT a
 // timezone suffix, so JS would render them as local wall-clock values (8h off
