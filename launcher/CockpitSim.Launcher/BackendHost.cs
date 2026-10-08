@@ -61,9 +61,12 @@ public sealed class BackendHost : IDisposable
                 CreateNoWindow = true,
                 UseShellExecute = false,
             };
-            // Child inherits this process' environment.
+            // Child inherits this process' environment. ASPNETCORE_URLS uses
+            // the bind address (0.0.0.0 so the trainer PC can watch over the
+            // LAN), NOT BackendBaseUrl — which is only where this launcher
+            // points its own health check / browser (localhost on this PC).
             startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
-            startInfo.Environment["ASPNETCORE_URLS"] = _config.BackendBaseUrl;
+            startInfo.Environment["ASPNETCORE_URLS"] = _config.BackendBindUrl;
             _process = Process.Start(startInfo);
             _owned = _process != null;
         }

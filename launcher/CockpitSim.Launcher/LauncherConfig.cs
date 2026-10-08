@@ -15,6 +15,16 @@ public sealed class LauncherConfig
     public string BackendBaseUrl { get; set; } = DefaultBaseUrl;
 
     /// <summary>
+    /// Address the backend binds to when this launcher starts it (used for the
+    /// child's ASPNETCORE_URLS). Defaults to 0.0.0.0 so the trainer PC can
+    /// reach the dashboard over the LAN. Distinct from <see cref="BackendBaseUrl"/>,
+    /// which is where THIS app points its health check + browser (localhost is
+    /// correct on the same machine). Set to http://localhost:5247 to keep the
+    /// backend loopback-only.
+    /// </summary>
+    public string BackendBindUrl { get; set; } = "http://0.0.0.0:5247";
+
+    /// <summary>
     /// Auto-start the telemetry bridge as a hidden child process while the app
     /// runs. The bridge self-discovers sessions (GET /api/bridge/active), so no
     /// session id is passed — disable only for debugging.
@@ -33,6 +43,22 @@ public sealed class LauncherConfig
 
     /// <summary>Explicit backend exe path. When empty, resolved next to the app.</summary>
     public string BackendExePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Launch the simulator (via its Steam rungameid URI) when the dashboard
+    /// sends the startSimulator command. Disable to leave MSFS launches manual.
+    /// </summary>
+    public bool AutoLaunchSimulator { get; set; } = true;
+
+    /// <summary>Steam App ID used to build the steam://rungameid URI. 1250410 = MSFS 2020.</summary>
+    public string SimulatorAppId { get; set; } = "1250410";
+
+    /// <summary>
+    /// Process names (no extension) the watcher polls for to know the sim is
+    /// alive and to detect its exit. Config-driven so MSFS 2024 / the Store
+    /// edition can be added later without a recompile.
+    /// </summary>
+    public string[] SimulatorProcessNames { get; set; } = new[] { "FlightSimulator" };
 
     public string HealthUrl => $"{BackendBaseUrl}/api/health";
     public string LoginUrl => $"{BackendBaseUrl}/dashboard/login/login.html";

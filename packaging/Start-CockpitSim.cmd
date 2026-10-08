@@ -4,7 +4,7 @@ REM Starts the local backend (SQLite, Development) if needed, waits for
 REM /api/health, then opens the WPF launcher. Double-click this file.
 setlocal
 set ASPNETCORE_ENVIRONMENT=Development
-set ASPNETCORE_URLS=http://localhost:5247
+set ASPNETCORE_URLS=http://0.0.0.0:5247
 set BACKEND_DIR=%~dp0backend
 set BACKEND_EXE=%BACKEND_DIR%\CockpitSim.exe
 set LAUNCHER_EXE=%~dp0launcher\CockpitSim.Launcher.exe

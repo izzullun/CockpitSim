@@ -10,11 +10,12 @@ function fmtActual(metric) {
   return `${metric.actual} ${metric.unit || ""}`.trim();
 }
 
+// Display choice: the report shows each metric's actual value only — no
+// target/tolerance quote. Grading still uses target/tolerance server-side
+// (ScenarioMetrics + GradingService); this only hides them on the report.
+// Returns "" for every metric so the caller never renders a target span.
 function fmtTarget(metric) {
-  if (metric.target === null || metric.target === undefined) return "—";
-  const tol = metric.tolerance !== null && metric.tolerance !== undefined
-    ? ` ±${metric.tolerance}` : "";
-  return `${metric.target}${tol} ${metric.unit || ""}`.trim();
+  return "";
 }
 
 // 01 // summary cards from a report: flight time, completion, score, risk.

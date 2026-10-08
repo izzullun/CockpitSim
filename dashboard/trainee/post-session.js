@@ -55,7 +55,8 @@ function renderTelemetry(report) {
     const term = document.createElement("div");
     term.className = "stat-item";
     const flag = m.withinTol === false ? " ⚠" : "";
-    term.innerHTML = `<dt>${m.label}${flag}</dt><dd>${fmtActual(m)} <span class="stat-target">target ${fmtTarget(m)}</span></dd>`;
+    // Value only — no target quote. Grading pass/breach shows via the ⚠ flag.
+    term.innerHTML = `<dt>${m.label}${flag}</dt><dd>${fmtActual(m)}</dd>`;
     list.appendChild(term);
   });
   if (report.warnings.length > 0) {

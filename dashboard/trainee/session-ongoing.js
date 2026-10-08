@@ -141,6 +141,31 @@ async function endSession() {
   await handleFinished();
 }
 
+// Host (WPF) → page events about the simulator lifetime. Only wired up inside
+// WebView2 (window.chrome.webview); a no-op in a plain browser.
+function listenForSimulatorEvents() {
+  if (!(window.chrome && window.chrome.webview)) return;
+  window.chrome.webview.addEventListener("message", (e) => {
+    const msg = e.data || {};
+    const hint = document.getElementById("ongoing-hint");
+
+    if (msg.event === "simulatorStarted") {
+      hint.textContent = "Simulator launched — fly in MSFS, then press END SESSION when done.";
+    } else if (msg.event === "simulatorLaunchFailed") {
+      // Non-fatal: a manually-opened sim still feeds telemetry.
+      hint.textContent = (msg.detail || "Could not launch MSFS via Steam.") +
+        " Start it manually, then fly.";
+    } else if (msg.event === "simulatorClosed") {
+      // Auto-end the session so the report is generated. endSession() no-ops
+      // when the user already ended (ending/redirected guards) or no session.
+      if (!redirected && !ending && sessionId) {
+        hint.textContent = "Simulator closed — ending your session…";
+        endSession();
+      }
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (session) {
     document.getElementById("hud-username").textContent = session.username.toUpperCase();
@@ -154,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const def = (typeof scenarioDef === "function" && scenarioDef("hover")) || null;
   const interval = (def && def.pollMs) || 1000;
   document.getElementById("btn-end-session").addEventListener("click", endSession);
+  listenForSimulatorEvents();
   pollOnce();
   pollTimer = setInterval(pollOnce, interval);
   clockTimer = setInterval(() => {

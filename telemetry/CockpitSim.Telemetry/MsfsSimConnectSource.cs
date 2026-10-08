@@ -48,22 +48,41 @@ public sealed class MsfsSimConnectSource : ITelemetrySource
 
     private void PumpLoop()
     {
-        while (!_pumpCts.Token.IsCancellationRequested)
+        // Safety net: any exception thrown on this WinForms thread (e.g. from a
+        // Form.Load handler) is caught here and logged instead of popping the
+        // JIT crash dialog — the loop below then reconnects. ThrowException
+        // would re-raise at the Application.Run call site; CatchException routes
+        // to ThreadException, which we swallow so the retry keeps running.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += OnPumpThreadException;
+        try
         {
-            try
+            while (!_pumpCts.Token.IsCancellationRequested)
             {
-                using var form = new SimPumpForm(_samplesPerSecond, _channel.Writer, _pumpCts.Token);
-                Application.Run(form); // returns on cancel or sim quit
+                try
+                {
+                    using var form = new SimPumpForm(_samplesPerSecond, _channel.Writer, _pumpCts.Token);
+                    Application.Run(form); // returns on cancel or sim quit
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[sim] pump error ({ex.Message}) — retrying in 5s...");
+                }
+                if (_pumpCts.Token.IsCancellationRequested) break;
+                Console.WriteLine("[sim] sim disconnected — waiting for reconnect...");
+                Thread.Sleep(TimeSpan.FromSeconds(5));
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"[sim] pump error ({ex.Message}) — retrying in 5s...");
-            }
-            if (_pumpCts.Token.IsCancellationRequested) break;
-            Console.WriteLine("[sim] sim disconnected — waiting for reconnect...");
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            Application.ThreadException -= OnPumpThreadException;
         }
         _channel.Writer.TryComplete();
+    }
+
+    private static void OnPumpThreadException(object sender, ThreadExceptionEventArgs e)
+    {
+        Console.Error.WriteLine($"[sim] recoverable UI-thread error: {e.Exception.Message}");
     }
 
     public async ValueTask DisposeAsync()
@@ -121,7 +140,20 @@ public sealed class MsfsSimConnectSource : ITelemetrySource
 
         private void Open()
         {
-            _sim = new SimConnect("CockpitSim", Handle, WM_USER_SIMCONNECT, null, 0);
+            try
+            {
+                // Throws COMException E_FAIL when MSFS isn't running (or the sim
+                // isn't up yet). Caught here so the form closes and PumpLoop
+                // retries in 5s — previously this escaped the Form.Load handler
+                // and surfaced as a WinForms thread-exception crash dialog.
+                _sim = new SimConnect("CockpitSim", Handle, WM_USER_SIMCONNECT, null, 0);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[sim] MSFS not reachable ({ex.Message}) — will retry.");
+                Close(); // returns Application.Run; PumpLoop sleeps and retries
+                return;
+            }
             _sim.OnRecvQuit += (_, _) =>
             {
                 // Sim closed: unwind the message loop; the pump thread retries.

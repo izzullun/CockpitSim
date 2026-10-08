@@ -143,11 +143,25 @@ async function loadLiveSection() {
 
 let launchInProgress = false;
 
-// Real start: creates the backend session, then hands off to the ongoing
-// page, which polls live telemetry and auto-redirects to the report when the
-// session completes. MSFS itself is opened manually until the launcher
-// host-object slice lands (see AGENTS.md ownership: Member 4) — the hint
-// below says so honestly instead of simulating activity.
+// Ask the WPF host to launch MSFS 2020 via Steam (steam://rungameid). This is
+// a no-op in a plain browser — window.chrome.webview only exists inside
+// WebView2 — so developing against Live Server / a normal browser is unaffected.
+function requestSimulatorLaunch() {
+  try {
+    if (window.chrome && window.chrome.webview) {
+      window.chrome.webview.postMessage({ command: "startSimulator" });
+    }
+  } catch (err) {
+    // Never block the session flow on a host-messaging failure.
+    console.warn("[pre-session] startSimulator postMessage failed", err);
+  }
+}
+
+// Real start: creates the backend session, asks the WPF host to launch MSFS
+// via Steam (see requestSimulatorLaunch), then hands off to the ongoing page —
+// which polls live telemetry and auto-redirects to the report when the session
+// completes. In a plain browser the launch request is a no-op and MSFS is
+// opened manually.
 async function startSession() {
   const statusEl = document.getElementById("hud-status");
   const btn = document.getElementById("btn-start-session");
@@ -171,12 +185,14 @@ async function startSession() {
   });
 
   if (res.ok && res.data && res.data.sessionId) {
+    requestSimulatorLaunch();
     window.location.href = `./session-ongoing.html?session=${encodeURIComponent(res.data.sessionId)}`;
     return;
   }
 
   // 409 = a session is already running — pick up where it left off.
   if (res.status === 409 && res.data && res.data.sessionId) {
+    requestSimulatorLaunch();
     window.location.href = `./session-ongoing.html?session=${encodeURIComponent(res.data.sessionId)}`;
     return;
   }

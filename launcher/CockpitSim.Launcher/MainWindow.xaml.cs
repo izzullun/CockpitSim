@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.Json;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     private readonly LauncherConfig _config = LauncherConfig.Load();
     private readonly BackendHost _backend;
     private readonly BridgeHost _bridge;
+    private readonly SimulatorLauncherService _simulator;
     private bool _webViewReady;
     private bool _webviewSettingsApplied;
 
@@ -25,10 +27,15 @@ public partial class MainWindow : Window
     {
         _backend = new BackendHost(_config);
         _bridge = new BridgeHost(_config);
+        _simulator = new SimulatorLauncherService(_config);
+        _simulator.SimulatorStarted += (_, _) => PostSimEvent("simulatorStarted");
+        _simulator.SimulatorClosed += (_, _) => PostSimEvent("simulatorClosed");
+        _simulator.LaunchFailed += (_, detail) => PostSimEvent("simulatorLaunchFailed", detail);
         InitializeComponent();
         Loaded += MainWindow_Loaded;
         Closed += (_, _) =>
         {
+            _simulator.Dispose();
             _bridge.Dispose();
             _backend.Dispose();
         };
@@ -85,6 +92,9 @@ public partial class MainWindow : Window
                 args.Handled = true;
             };
 
+            // Dashboard → host commands (startSimulator). Strictly validated.
+            WebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+
             _webViewReady = true;
         }
 
@@ -95,6 +105,41 @@ public partial class MainWindow : Window
         // Backend is up (we only get here past the health gate), so the
         // bridge can discover sessions immediately — no session id needed.
         _bridge.EnsureRunning();
+    }
+
+    // Accepts ONLY the fixed startSimulator command — anything else is ignored,
+    // so the dashboard can never execute arbitrary commands or paths.
+    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        string? command = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(e.WebMessageAsJson);
+            if (doc.RootElement.TryGetProperty("command", out var cmd))
+            {
+                command = cmd.GetString();
+            }
+        }
+        catch
+        {
+            return; // not JSON — not a command we recognise
+        }
+
+        if (command == "startSimulator")
+        {
+            _ = _simulator.LaunchAsync();
+        }
+    }
+
+    // Host → dashboard: push a simulator lifecycle event into the page so the
+    // ongoing-session view can react (e.g. auto-end on simulatorClosed).
+    private void PostSimEvent(string eventName, string? detail = null)
+    {
+        if (!_webViewReady || WebView.CoreWebView2 == null) return;
+        var payload = detail == null
+            ? JsonSerializer.Serialize(new { @event = eventName })
+            : JsonSerializer.Serialize(new { @event = eventName, detail });
+        WebView.CoreWebView2.PostWebMessageAsJson(payload);
     }
 
     private void ApplyWebViewSettings()
