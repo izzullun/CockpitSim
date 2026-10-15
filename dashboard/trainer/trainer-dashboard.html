@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="../shared/css/main.css">
 	<link rel="stylesheet" href="../shared/css/logout-modal.css">
 	<link rel="stylesheet" href="trainer-dashboard.css">
+	<link rel="stylesheet" href="trainee-modal.css">
 </head>
 <body>
 	<div class="trainer-screen scanlines">
@@ -20,6 +21,7 @@
 				<span class="hud-value hud-status" id="hud-status">MONITORING</span>
 			</div>
 			<div class="hud-item hud-actions">
+				<button class="hud-btn" id="add-trainee-btn" type="button">+ Add Trainee</button>
 				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
 			</div>
 		</header>
@@ -139,6 +141,49 @@
 			</section>
 		</main>
 	</div>
+
+	<!-- SPIKE: Add Trainee modal -->
+	<div class="trainee-modal-overlay" id="trainee-modal-overlay" hidden>
+		<div class="trainee-modal login-panel scanlines">
+			<div class="corner corner-tl"></div>
+			<div class="corner corner-tr"></div>
+			<div class="corner corner-bl"></div>
+			<div class="corner corner-br"></div>
+
+			<header class="login-header">
+				<h1 class="login-title">Add Trainee</h1>
+				<p class="login-subtitle">Creates the account and links it to you</p>
+			</header>
+
+			<form id="trainee-form" class="login-form" novalidate>
+				<div class="field-group">
+					<label for="trainee-fullName">Full name</label>
+					<input type="text" id="trainee-fullName" required>
+				</div>
+				<div class="field-group">
+					<label for="trainee-email">Email</label>
+					<input type="email" id="trainee-email" required>
+				</div>
+				<div class="field-group">
+					<label for="trainee-username">Username</label>
+					<input type="text" id="trainee-username" autocomplete="username" required>
+				</div>
+				<div class="field-group">
+					<label for="trainee-password">Initial password</label>
+					<input type="password" id="trainee-password" autocomplete="new-password" required>
+				</div>
+
+				<p id="trainee-form-error" class="form-error" role="alert" hidden></p>
+
+				<div class="trainee-modal-buttons">
+					<button type="submit" class="btn-login"><span>Create Trainee</span></button>
+					<button type="button" class="btn-cancel" id="trainee-cancel-btn">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="trainee-toast" id="trainee-toast" hidden></div>
 
 	<script src="../shared/js/api.js"></script>
 	<script src="../shared/js/auth.js"></script>
