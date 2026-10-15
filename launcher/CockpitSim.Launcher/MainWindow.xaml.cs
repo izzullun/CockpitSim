@@ -33,12 +33,24 @@ public partial class MainWindow : Window
         _simulator.LaunchFailed += (_, detail) => PostSimEvent("simulatorLaunchFailed", detail);
         InitializeComponent();
         Loaded += MainWindow_Loaded;
+        // F5 reloads the WebView even with browser accelerator keys off —
+        // lets the dashboard UI be refreshed quickly while developing.
+        PreviewKeyDown += MainWindow_PreviewKeyDown;
         Closed += (_, _) =>
         {
             _simulator.Dispose();
             _bridge.Dispose();
             _backend.Dispose();
         };
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.F5 && _webViewReady && WebView.CoreWebView2 != null)
+        {
+            WebView.CoreWebView2.Reload();
+            e.Handled = true;
+        }
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
