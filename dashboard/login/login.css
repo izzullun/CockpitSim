@@ -225,6 +225,15 @@
   letter-spacing: 0.05em;
 }
 
+.login-footer a {
+  color: rgba(232, 237, 242, 0.6);
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  color: var(--accent-cyan);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-panel {
     animation: none;
