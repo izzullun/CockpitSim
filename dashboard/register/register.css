@@ -14,11 +14,24 @@
   padding-left: var(--space-sm);
 }
 
+/* Clickable links styled as subtle HUD chips so users can tell them apart
+   from plain footer text. */
 .login-footer a {
-  color: rgba(232, 237, 242, 0.6);
+  color: var(--accent-cyan);
   text-decoration: none;
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  padding: 3px 10px;
+  letter-spacing: 0.06em;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .login-footer a:hover {
-  color: var(--accent-cyan);
+  background: rgba(0, 217, 255, 0.12);
+  border-color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+.login-footer a:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
 }
