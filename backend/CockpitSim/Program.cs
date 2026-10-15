@@ -54,6 +54,14 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// [ApiController] would auto-return ValidationProblemDetails for invalid
+// models; our controllers return { message } so the dashboard JS can show
+// the error directly. Suppress the automatic response app-wide.
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 // Register Custom JWT Token Generator Service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 

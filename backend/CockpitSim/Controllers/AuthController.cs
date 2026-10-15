@@ -25,6 +25,7 @@ public class AuthController : ControllerBase
     // code. Model B (per-invite one-time codes) later swaps only
     // ValidateRegistrationCode — see plan appendix.
     [HttpPost("register-trainer")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterTrainer([FromBody] RegisterTrainerRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.FullName)
@@ -33,6 +34,16 @@ public class AuthController : ControllerBase
             || string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest(new { message = "All fields are required." });
+        }
+
+        // [ApiController] auto-validates and returns its own error shape; we
+        // return our { message } shape instead so the frontend can show it.
+        if (!ModelState.IsValid)
+        {
+            var firstError = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .FirstOrDefault()?.ErrorMessage ?? "Invalid input.";
+            return BadRequest(new { message = firstError });
         }
 
         if (!ValidateRegistrationCode(request.RegistrationCode))

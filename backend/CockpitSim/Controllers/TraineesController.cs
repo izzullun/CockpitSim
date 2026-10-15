@@ -37,6 +37,14 @@ public class TraineesController : ControllerBase
         var trainerId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (trainerId == null) return Unauthorized();
 
+        if (!ModelState.IsValid)
+        {
+            var firstError = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .FirstOrDefault()?.ErrorMessage ?? "Invalid input.";
+            return BadRequest(new { message = firstError });
+        }
+
         var existing = await _userManager.FindByNameAsync(request.Username);
         if (existing != null)
         {

@@ -1,10 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CockpitSim.DTOs;
 
 // SPIKE (throwaway): trainer self-registration.
 public class RegisterTrainerRequestDto
 {
     public string FullName { get; set; } = string.Empty;
+
+    [EmailAddress]
     public string Email { get; set; } = string.Empty;
+
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string? RegistrationCode { get; set; }
@@ -15,7 +20,10 @@ public class RegisterTrainerRequestDto
 public class CreateTraineeRequestDto
 {
     public string FullName { get; set; } = string.Empty;
+
+    [EmailAddress]
     public string Email { get; set; } = string.Empty;
+
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
