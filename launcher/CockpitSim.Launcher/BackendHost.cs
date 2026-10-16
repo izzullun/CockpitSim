@@ -116,8 +116,24 @@ public sealed class BackendHost : IDisposable
     {
         try
         {
+            // Hostname (mDNS/LLMNR) resolves to a link-local IPv6 + IPv4; a
+            // plain HttpClient can burn the whole timeout on the unreachable
+            // IPv6 first. Resolve to IPv4 and hit that instead.
+            // ponytail: resolves on every call — cache if startup latency matters.
+            var uri = new Uri(_config.HealthUrl);
+            if (!uri.Host.Equals("localhost") && uri.HostNameType == UriHostNameType.Dns)
+            {
+                var entry = await System.Net.Dns.GetHostEntryAsync(uri.Host, cancellationToken);
+                var ipv4 = entry.AddressList.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                if (ipv4 != null)
+                {
+                    var builder = new UriBuilder(uri) { Host = ipv4.ToString() };
+                    uri = builder.Uri;
+                }
+            }
+
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-            using var response = await http.GetAsync(_config.HealthUrl, cancellationToken);
+            using var response = await http.GetAsync(uri, cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch
