@@ -1,0 +1,37 @@
+/* SPIKE (throwaway): register page — reuses login.css, adds only code-field
+   emphasis and the success line. */
+
+.code-input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.form-success {
+  font-size: 12px;
+  color: var(--status-ok);
+  border-left: 2px solid var(--status-ok);
+  padding-left: var(--space-sm);
+}
+
+/* Clickable links styled as subtle HUD chips so users can tell them apart
+   from plain footer text. */
+.login-footer a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  padding: 3px 10px;
+  letter-spacing: 0.06em;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.login-footer a:hover {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+.login-footer a:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}

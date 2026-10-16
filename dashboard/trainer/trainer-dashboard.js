@@ -1063,6 +1063,92 @@ async function loadLiveData() {
 	refreshAwaitingFeedback();
 }
 
+// ==========================================================================
+// SPIKE (throwaway): Add Trainee modal — POST /api/trainees.
+// Backend stamps AssignedTrainerId from this trainer's JWT.
+// ==========================================================================
+
+function openTraineeModal() {
+	const overlay = document.getElementById('trainee-modal-overlay');
+	if (!overlay) return;
+	overlay.hidden = false;
+	const first = document.getElementById('trainee-fullName');
+	if (first) first.focus();
+}
+
+function closeTraineeModal() {
+	const overlay = document.getElementById('trainee-modal-overlay');
+	if (!overlay) return;
+	overlay.hidden = true;
+	document.getElementById('trainee-form').reset();
+	const err = document.getElementById('trainee-form-error');
+	if (err) err.hidden = true;
+}
+
+function showTraineeToast(message, isError) {
+	const toast = document.getElementById('trainee-toast');
+	if (!toast) return;
+	toast.textContent = message;
+	toast.classList.toggle('is-error', Boolean(isError));
+	toast.hidden = false;
+	clearTimeout(toast._timer);
+	toast._timer = setTimeout(() => { toast.hidden = true; }, 4000);
+}
+
+function bindTraineeModal() {
+	const btn = document.getElementById('add-trainee-btn');
+	if (btn) btn.addEventListener('click', openTraineeModal);
+
+	const cancel = document.getElementById('trainee-cancel-btn');
+	if (cancel) cancel.addEventListener('click', closeTraineeModal);
+
+	const overlay = document.getElementById('trainee-modal-overlay');
+	if (overlay) overlay.addEventListener('click', (e) => {
+		if (e.target === overlay) closeTraineeModal();
+	});
+
+	document.getElementById('trainee-form').addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const errorEl = document.getElementById('trainee-form-error');
+		errorEl.hidden = true;
+
+		const fullName = document.getElementById('trainee-fullName').value.trim();
+		const email = document.getElementById('trainee-email').value.trim();
+		const username = document.getElementById('trainee-username').value.trim();
+		const password = document.getElementById('trainee-password').value;
+
+		if (!fullName || !email || !username || !password) {
+			errorEl.textContent = 'Fill in all fields.';
+			errorEl.hidden = false;
+			return;
+		}
+
+		try {
+			const { ok, data } = await apiRequest('/trainees', {
+				auth: true,
+				method: 'POST',
+				body: { fullName, email, username, password },
+			});
+
+			if (!ok) {
+				errorEl.textContent = (data && data.message) || 'Failed to create trainee.';
+				errorEl.hidden = false;
+				return;
+			}
+
+			closeTraineeModal();
+			showTraineeToast(`Trainee "${username}" created. They can now log in.`);
+			// New trainee has no sessions yet, so the queue-driven roster will
+			// show them only once they start a session. Spike: refresh anyway.
+			loadLiveData();
+		} catch (err) {
+			console.error('[trainer] trainee creation failed:', err);
+			errorEl.textContent = 'Cannot reach the server. Is the backend running?';
+			errorEl.hidden = false;
+		}
+	});
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 	loadLiveData();
 	loadTraineeSettings();
@@ -1071,6 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	bindSessionFilters();
 	bindFeedbackButton();
 	bindLogoutButton();
+	bindTraineeModal();
 	// Audio alerts: unlock AudioContext on first gesture + mute toggle.
 	if (typeof audioAlerts !== 'undefined') {
 		const muteBtn = document.getElementById('mute-btn');

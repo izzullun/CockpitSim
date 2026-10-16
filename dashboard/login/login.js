@@ -20,6 +20,41 @@
   });
 })();
 
+// Shows a live "Try again in M:SS" countdown and disables the form while the
+// account is locked (backend returns retryAfterSeconds on lockout).
+function startLockoutCountdown(seconds, errorEl) {
+  const form = document.getElementById('login-form');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const usernameEl = document.getElementById('username');
+  const passwordEl = document.getElementById('password');
+
+  submitBtn.disabled = true;
+  usernameEl.disabled = true;
+  passwordEl.disabled = true;
+
+  let remaining = seconds;
+  const render = function () {
+    const m = Math.floor(remaining / 60);
+    const s = String(remaining % 60).padStart(2, '0');
+    errorEl.textContent = `Account locked. Try again in ${m}:${s}.`;
+    errorEl.hidden = false;
+  };
+  render();
+
+  const timer = setInterval(function () {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(timer);
+      errorEl.textContent = 'You can try logging in again.';
+      submitBtn.disabled = false;
+      usernameEl.disabled = false;
+      passwordEl.disabled = false;
+      return;
+    }
+    render();
+  }, 1000);
+}
+
 document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
 
@@ -42,6 +77,10 @@ document.getElementById('login-form').addEventListener('submit', async function 
     });
 
     if (!ok) {
+      if (data && typeof data.retryAfterSeconds === 'number') {
+        startLockoutCountdown(data.retryAfterSeconds, errorEl);
+        return;
+      }
       errorEl.textContent = (data && data.message) || 'Invalid username or password.';
       errorEl.hidden = false;
       return;

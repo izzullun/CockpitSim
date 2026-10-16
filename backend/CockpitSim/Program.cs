@@ -46,6 +46,12 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequireLowercase = false;
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequiredLength = 8;
+
+        // Lockout: 5 failed attempts -> 5-minute lock (brute-force guard).
+        // LockoutEnd/AccessFailedCount columns already exist in Identity schema.
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -53,6 +59,14 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 // Add Swagger UI (Interactive API testing in browser)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// [ApiController] would auto-return ValidationProblemDetails for invalid
+// models; our controllers return { message } so the dashboard JS can show
+// the error directly. Suppress the automatic response app-wide.
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 // Register Custom JWT Token Generator Service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
