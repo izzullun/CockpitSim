@@ -11,6 +11,19 @@ const SCENARIOS = {
   hover: {
     title: "Hover",
     pollMs: 1000,
+    // Grading weights (sum = 100) — mirror of GradingService.HoverWeights.
+    // Used for the visible score breakdown and pass-criteria panels.
+    weights: { radar_alt: 35, ground_speed: 25, vertical_speed: 15, bank: 12.5, pitch: 12.5 },
+    passThreshold: 70,
+    defaultDurationMin: 25,
+    // Trainee-facing objectives, shown on the ongoing-session page.
+    objectives: [
+      "Hold a stable hover at 5 ft radar altitude (±2 ft).",
+      "Keep ground speed at 0 kt (±1 kt) — no drift.",
+      "Keep vertical speed at 0 ft/min (±100 ft/min).",
+      "Hold bank and pitch within ±5° of level.",
+      "Complete the objective before the session time limit expires.",
+    ],
     metrics: [
       { key: "radar_alt", label: "Radar Alt", unit: "ft", target: 5.0, tolerance: 2.0, aggregate: "mean",
         tip: "Make collective corrections earlier — chase the altitude trend, not the number." },

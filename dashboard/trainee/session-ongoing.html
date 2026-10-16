@@ -22,6 +22,7 @@
         <span class="hud-value hud-status" id="hud-status">LIVE</span>
       </div>
       <div class="hud-item hud-actions">
+        <button class="logout-btn" id="mute-btn" type="button" title="Toggle audio warnings">Sound: On</button>
         <button class="logout-btn" id="logout-btn" type="button">Logout</button>
       </div>
     </header>
@@ -53,6 +54,10 @@
             <dt>Elapsed</dt>
             <dd id="elapsed-time">00:00</dd>
           </div>
+          <div class="profile-row" id="remaining-row" hidden>
+            <dt>Remaining</dt>
+            <dd id="remaining-time">—</dd>
+          </div>
           <div class="profile-row">
             <dt>Tolerance</dt>
             <dd id="tol-status">Waiting for telemetry…</dd>
@@ -62,6 +67,10 @@
             <dd id="warning-count">—</dd>
           </div>
         </dl>
+        <div class="objectives-panel" id="objectives-panel" hidden>
+          <h3 class="objectives-title">Objectives</h3>
+          <ul class="objectives-list" id="objectives-list"></ul>
+        </div>
         <ul class="live-flags" id="live-flags"></ul>
         <p class="upcoming-hint" id="bridge-cmd-wrap" hidden>Run this in a terminal (repo root) to feed this session:<br><code id="bridge-cmd"></code></p>
         <p class="upcoming-hint" id="ongoing-hint">
@@ -79,6 +88,7 @@
   <script src="../shared/js/auth.js"></script>
   <script src="../shared/js/logout-modal.js"></script>
   <script src="../shared/js/scenarios.js"></script>
+  <script src="../shared/js/audio-alerts.js"></script>
   <script src="session-ongoing.js"></script>
 </body>
 </html>

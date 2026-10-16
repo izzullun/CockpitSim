@@ -20,6 +20,7 @@
 				<span class="hud-value hud-status" id="hud-status">MONITORING</span>
 			</div>
 			<div class="hud-item hud-actions">
+				<button class="logout-btn" id="mute-btn" type="button" title="Toggle audio warnings">Sound: On</button>
 				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
 			</div>
 		</header>
@@ -115,6 +116,22 @@
 				</div>
 			</section>
 
+			<section class="panel panel-settings" aria-labelledby="settings-heading">
+				<div class="panel-corner panel-corner-tl"></div>
+				<div class="panel-corner panel-corner-br"></div>
+				<h2 id="settings-heading" class="panel-title">
+					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<circle cx="12" cy="12" r="3"></circle>
+						<path d="M19 12a7 7 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 0 1-2 1.2L14 21h-4l-.5-2.6a7 7 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 0 1 5 12a7 7 0 0 1 .1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 0 1 2-1.2L10 3h4l.5 2.6a7 7 0 0 1 2 1.2l2.4-1 2 3.4-2 1.6c.06.4.1.8.1 1.2z"></path>
+					</svg>
+					<span>05 // SESSION SETTINGS & GRADING GUIDE</span>
+				</h2>
+				<div class="panel-subtitle">Session time limit per trainee</div>
+				<div id="trainee-settings" class="trainee-settings"></div>
+				<div class="panel-subtitle">Grading guidelines</div>
+				<div id="grading-guidelines"></div>
+			</section>
+
 			<section class="panel panel-feedback" aria-labelledby="feedback-heading">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
@@ -144,6 +161,8 @@
 	<script src="../shared/js/auth.js"></script>
 	<script src="../shared/js/logout-modal.js"></script>
 	<script src="../shared/js/scenarios.js"></script>
+	<script src="../shared/js/report-renderer.js"></script>
+	<script src="../shared/js/audio-alerts.js"></script>
 	<script src="trainer-dashboard.js"></script>
 </body>
 </html>

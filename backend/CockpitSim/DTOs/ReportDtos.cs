@@ -12,6 +12,10 @@ public class SessionReportDto
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
     public double? Score { get; set; }
+    // Additive (contract-safe): visible score calculation + session time limit.
+    public double PassThreshold { get; set; } = 70.0;
+    public string? ScoreFormula { get; set; }
+    public int? TimeLimitMinutes { get; set; }
     public List<ReportMetricDto> Metrics { get; set; } = new();
     public List<string> Warnings { get; set; } = new();
     public List<TimelineEventDto> Timeline { get; set; } = new();
@@ -27,6 +31,10 @@ public class ReportMetricDto
     public double? Target { get; set; }
     public double? Tolerance { get; set; }
     public bool? WithinTol { get; set; }
+    // Additive (contract-safe): per-metric score breakdown.
+    public double? Weight { get; set; }
+    public double? WithinPct { get; set; }
+    public double? Contribution { get; set; }
 }
 
 public class TimelineEventDto

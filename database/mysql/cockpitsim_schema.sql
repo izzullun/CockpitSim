@@ -56,6 +56,7 @@ CREATE TABLE AspNetUsers (
     AssignedTrainerId      VARCHAR(255) NULL,       -- null for trainer/admin
     CreatedAt              DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     LastLoginAt            DATETIME(6) NULL,
+    SessionDurationMinutes INT NULL,                -- per-trainee session time limit (trainer-set; null = default 25)
 
     PRIMARY KEY (Id),
     UNIQUE KEY UserNameIndex (NormalizedUserName),
@@ -154,6 +155,7 @@ CREATE TABLE sessions (
     status       ENUM('scheduled', 'in_progress', 'completed', 'cancelled')
                      NOT NULL DEFAULT 'scheduled',
     created_at   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    time_limit_minutes INT NULL,                    -- snapshot of trainee's limit at session start (null = no limit / legacy)
     PRIMARY KEY (id),
     KEY IX_sessions_trainee_id (trainee_id),
     KEY IX_sessions_trainer_id (trainer_id),
