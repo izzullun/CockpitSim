@@ -114,12 +114,30 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid username or password." });
         }
 
+        // Lockout check — IsLockedOutAsync compares LockoutEnd against UtcNow.
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            var remaining = (int)Math.Ceiling((user.LockoutEnd!.Value - DateTimeOffset.UtcNow).TotalSeconds);
+            return Unauthorized(new { message = "Account locked.", retryAfterSeconds = remaining });
+        }
+
         // 2. Verify hashed password via Identity (PBKDF2).
         bool isValidPassword = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!isValidPassword)
         {
+            // AccessFailedAsync increments the counter and auto-sets LockoutEnd
+            // once MaxFailedAccessAttempts (5) is hit.
+            await _userManager.AccessFailedAsync(user);
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var remaining = (int)Math.Ceiling((user.LockoutEnd!.Value - DateTimeOffset.UtcNow).TotalSeconds);
+                return Unauthorized(new { message = "Account locked.", retryAfterSeconds = remaining });
+            }
             return Unauthorized(new { message = "Invalid username or password." });
         }
+
+        // Successful login resets the failure counter.
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         // 3. Resolve role from Identity roles (seeded lowercase).
         var roles = await _userManager.GetRolesAsync(user);
