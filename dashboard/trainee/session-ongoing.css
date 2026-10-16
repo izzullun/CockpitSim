@@ -50,3 +50,39 @@
   color: var(--accent-cyan);
   user-select: all;
 }
+
+/* Objectives panel */
+.objectives-panel {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--bg-panel-raised);
+}
+
+.objectives-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, var(--text-secondary));
+}
+
+.objectives-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Countdown */
+#remaining-time.remaining-low {
+  color: var(--status-warn);
+  font-weight: 700;
+  animation: remaining-blink 1s step-start infinite;
+}
+
+@keyframes remaining-blink {
+  50% { opacity: 0.45; }
+}

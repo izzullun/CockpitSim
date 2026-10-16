@@ -64,12 +64,32 @@ public sealed class TelemetryWatchdog : BackgroundService
     {
         using var scope = _scopes.CreateScope();
         var influx = scope.ServiceProvider.GetRequiredService<InfluxService>();
-        if (!influx.IsConfigured) return; // no telemetry backend: nothing to detect silence on
-
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var grading = scope.ServiceProvider.GetRequiredService<GradingService>();
 
-        var cutoff = DateTime.UtcNow - _minimumAge;
+        // Time-limit sweep: sessions past their configured duration are
+        // completed + graded regardless of telemetry state.
+        var now = DateTime.UtcNow;
+        var expired = await db.Sessions
+            .Where(s => s.Status == "in_progress" && s.TimeLimitMinutes != null)
+            .ToListAsync(ct);
+        foreach (var session in expired.Where(s =>
+                     now > s.StartedAt.AddMinutes(s.TimeLimitMinutes!.Value)))
+        {
+            session.EndedAt = now;
+            session.Status = "completed";
+            await db.SaveChangesAsync(ct);
+
+            var score = await grading.GradeAsync(session.Id, ct);
+            _logger.LogInformation(
+                "Watchdog auto-ended time-expired session {SessionId} " +
+                "(limit {Limit} min, score {Score}).",
+                session.Id, session.TimeLimitMinutes, score);
+        }
+
+        if (!influx.IsConfigured) return; // no telemetry backend: nothing to detect silence on
+
+        var cutoff = now - _minimumAge;
         var stale = await db.Sessions
             .Where(s => s.Status == "in_progress" && s.StartedAt < cutoff)
             .ToListAsync(ct);

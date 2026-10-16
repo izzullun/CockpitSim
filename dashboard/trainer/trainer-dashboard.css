@@ -804,3 +804,45 @@ body {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 }
+/* Trainee session-duration settings */
+.trainee-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.trainee-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--bg-panel-raised);
+}
+
+.trainee-setting-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.trainee-setting-user {
+  color: var(--text-muted, var(--text-secondary));
+  font-size: 12px;
+}
+
+.trainee-duration-select {
+  padding: 4px 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.trainee-setting-status {
+  min-width: 70px;
+  font-size: 12px;
+  color: var(--status-ok);
+}

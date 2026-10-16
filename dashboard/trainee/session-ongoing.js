@@ -10,12 +10,54 @@ let sessionId = null;
 let pollTimer = null;
 let clockTimer = null;
 let startedAt = null;
+let timeLimitMinutes = null;
+let timeWarningPlayed = false;
 let redirected = false;
 
 function elapsedText() {
   if (!startedAt) return "00:00";
   const s = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function remainingSeconds() {
+  if (!startedAt || !timeLimitMinutes) return null;
+  return Math.max(0, Math.floor(timeLimitMinutes * 60 - (Date.now() - startedAt.getTime()) / 1000));
+}
+
+function renderRemaining() {
+  const rem = remainingSeconds();
+  const row = document.getElementById("remaining-row");
+  const dd = document.getElementById("remaining-time");
+  if (rem === null) {
+    row.hidden = true;
+    return;
+  }
+  row.hidden = false;
+  dd.textContent = `${String(Math.floor(rem / 60)).padStart(2, "0")}:${String(rem % 60).padStart(2, "0")}`;
+  dd.classList.toggle("remaining-low", rem <= 60);
+  // Final-minute audio warning (once per session).
+  if (rem <= 60 && rem > 0 && !timeWarningPlayed) {
+    timeWarningPlayed = true;
+    if (typeof audioAlerts !== "undefined") audioAlerts.warnTimeExpired();
+  }
+}
+
+function renderObjectives(scenarioKey) {
+  const def = typeof scenarioDef === "function" ? scenarioDef(scenarioKey) : null;
+  const panel = document.getElementById("objectives-panel");
+  const list = document.getElementById("objectives-list");
+  if (!def || !def.objectives || def.objectives.length === 0) {
+    panel.hidden = true;
+    return;
+  }
+  list.innerHTML = "";
+  def.objectives.forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    list.appendChild(li);
+  });
+  panel.hidden = false;
 }
 
 function setState(text, ok) {
@@ -86,7 +128,13 @@ function renderLive(report) {
   }
 
   document.getElementById("warning-count").textContent = String(warnings.length);
+  if (report.timeLimitMinutes && !timeLimitMinutes) {
+    timeLimitMinutes = report.timeLimitMinutes;
+  }
+  renderRemaining();
   renderFlags(report);
+  // Audio warning on newly out-of-tolerance metrics (edge-triggered).
+  if (typeof audioAlerts !== "undefined") audioAlerts.update(report.metrics);
 }
 
 async function pollOnce() {
@@ -101,7 +149,10 @@ async function pollOnce() {
     await handleFinished();
     return;
   }
-  if (!startedAt) startedAt = parseDbDate(res.data.startedAt);
+  if (!startedAt) {
+    startedAt = parseDbDate(res.data.startedAt);
+    renderObjectives(res.data.scenario);
+  }
   renderLive(res.data);
 }
 
@@ -184,6 +235,21 @@ document.addEventListener("DOMContentLoaded", () => {
   pollTimer = setInterval(pollOnce, interval);
   clockTimer = setInterval(() => {
     document.getElementById("elapsed-time").textContent = elapsedText();
+    renderRemaining();
   }, 1000);
+
+  // Audio alerts: unlock AudioContext on first gesture + mute toggle.
+  if (typeof audioAlerts !== "undefined") {
+    const muteBtn = document.getElementById("mute-btn");
+    const syncMuteBtn = () => {
+      muteBtn.textContent = audioAlerts.muted ? "Sound: Off" : "Sound: On";
+    };
+    syncMuteBtn();
+    muteBtn.addEventListener("click", () => {
+      audioAlerts.setMuted(!audioAlerts.muted);
+      syncMuteBtn();
+    });
+    document.addEventListener("click", () => audioAlerts.unlock(), { once: true });
+  }
   initLogoutConfirm();
 });

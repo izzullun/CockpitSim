@@ -148,6 +148,9 @@ async function loadReport() {
   }
 
   renderSummary(report, attemptLabel);
+  // Visible score calculation (shared renderer; "" when ungraded).
+  const breakdownHost = document.getElementById("score-breakdown");
+  if (breakdownHost) breakdownHost.innerHTML = reportScoreBreakdown(report);
   renderTelemetry(report);
   renderNotes(report);
   renderTimeline(report);

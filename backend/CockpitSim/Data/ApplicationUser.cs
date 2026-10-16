@@ -11,5 +11,9 @@ public class ApplicationUser : IdentityUser
     public string? AssignedTrainerId { get; set; }
 
     public DateTime? LastLoginAt { get; set; }
+
+    // Trainees only — session duration limit in minutes, set by their
+    // trainer (null = scenario default fallback).
+    public int? SessionDurationMinutes { get; set; }
 }
 

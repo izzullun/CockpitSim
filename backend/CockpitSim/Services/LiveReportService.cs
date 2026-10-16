@@ -35,6 +35,7 @@ public sealed class LiveReportService
             StartedAt = session.StartedAt,
             EndedAt = session.EndedAt,
             Score = null,
+            TimeLimitMinutes = session.TimeLimitMinutes,
         };
 
         var defs = ScenarioMetrics.ForScenario(scenarioKey);

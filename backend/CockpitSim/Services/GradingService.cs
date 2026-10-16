@@ -65,6 +65,8 @@ public sealed class GradingService
             StartedAt = session.StartedAt,
             EndedAt = session.EndedAt,
             Score = null,
+            PassThreshold = PassThreshold,
+            TimeLimitMinutes = session.TimeLimitMinutes,
         };
         report.Timeline.Add(new TimelineEventDto
         {
@@ -136,6 +138,11 @@ public sealed class GradingService
                 Target = def.Target,
                 Tolerance = def.Tolerance,
                 WithinTol = def.Target.HasValue ? withinPct >= PassThreshold : null,
+                Weight = HoverWeights.TryGetValue(def.Key, out var w) ? w : null,
+                WithinPct = double.IsNaN(withinPct) ? null : Math.Round(withinPct, 1),
+                Contribution = HoverWeights.ContainsKey(def.Key) && !double.IsNaN(withinPct)
+                    ? Math.Round(HoverWeights[def.Key] * withinPct / 100.0, 1)
+                    : null,
             };
             scored.Add((def, withinPct, metric));
 
@@ -166,6 +173,15 @@ public sealed class GradingService
         double score = graded.Sum(t =>
             HoverWeights[t.Def.Key] * (double.IsNaN(t.WithinPct) ? 0.0 : t.WithinPct) / 100.0);
         report.Score = Math.Round(score, 1);
+
+        // Human-readable score calculation, e.g.
+        // "radar_alt 35 × 82.0% = 28.7 + ... = 81.2 → PASS (threshold 70)".
+        report.ScoreFormula = string.Join(" + ", graded.Select(t =>
+            $"{t.Def.Key} {HoverWeights[t.Def.Key]:g} × " +
+            $"{(double.IsNaN(t.WithinPct) ? 0.0 : t.WithinPct):F1}% = " +
+            $"{HoverWeights[t.Def.Key] * (double.IsNaN(t.WithinPct) ? 0.0 : t.WithinPct) / 100.0:F1}")) +
+            $" = {report.Score:F1} → {(report.Score >= PassThreshold ? "PASS" : "NEEDS WORK")} " +
+            $"(threshold {PassThreshold:g})";
 
         // Feed provenance goes into the immutable snapshot too, so the report
         // always says whether it was graded on simulated or live sim data.

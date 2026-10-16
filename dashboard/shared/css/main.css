@@ -87,3 +87,102 @@ input {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
+
+/* Score breakdown (shared: trainee post-session + trainer dashboard) */
+.score-breakdown {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--bg-panel-raised);
+}
+
+.score-breakdown h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, var(--text-secondary));
+}
+
+.score-breakdown__hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--text-muted, var(--text-secondary));
+}
+
+.score-breakdown__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.score-breakdown__table th,
+.score-breakdown__table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.score-breakdown__table thead th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.score-breakdown__table tfoot th {
+  border-bottom: none;
+  color: var(--accent-cyan, var(--text-primary));
+}
+
+.score-breakdown__formula {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.score-breakdown__formula code {
+  font-family: var(--font-mono, monospace);
+  user-select: all;
+}
+
+/* Grading guideline / criteria panels */
+.guideline-panel {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--bg-panel-raised);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.guideline-panel h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, var(--text-secondary));
+}
+
+.guideline-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.guideline-panel table th,
+.guideline-panel table td {
+  padding: 5px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.guideline-panel ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}

@@ -72,6 +72,9 @@ namespace CockpitSim.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("SessionDurationMinutes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
 
@@ -167,6 +170,9 @@ namespace CockpitSim.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("TimeLimitMinutes")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("TraineeId")
                         .IsRequired()
