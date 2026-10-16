@@ -8,6 +8,7 @@ public class MeResponseDto
     public string Role { get; set; } = string.Empty;
     public DateTime? LastLoginAt { get; set; }
     public string? AssignedTrainerName { get; set; }
+    public int? SessionDurationMinutes { get; set; }
 }
 
 public class SessionDto
@@ -67,4 +68,17 @@ public class FeedbackCoverageDto
 public class StartSessionRequestDto
 {
     public string Scenario { get; set; } = string.Empty;
+}
+
+public class TraineeSettingsDto
+{
+    public string TraineeId { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public int? SessionDurationMinutes { get; set; }
+}
+
+public class SetSessionDurationRequestDto
+{
+    public int Minutes { get; set; }
 }

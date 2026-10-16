@@ -35,6 +35,37 @@ function renderProfile(profile) {
   document.getElementById("hud-username").textContent = hudName;
 }
 
+// Static pass/fail criteria panel — the trainee-visible mirror of the
+// backend grading rules (GradingService). Weights come from scenarios.js so
+// the two stay in sync via the single source of truth.
+function renderPassCriteria(durationMinutes) {
+  const host = document.getElementById("pass-criteria");
+  if (!host || typeof scenarioDef !== "function") return;
+  const def = scenarioDef("hover");
+  if (!def) return;
+
+  const weightRows = Object.entries(def.weights || {})
+    .map(([key, w]) => {
+      const metric = def.metrics.find((m) => m.key === key);
+      return `<tr><td>${metric ? metric.label : key}</td><td>${w}</td></tr>`;
+    })
+    .join("");
+
+  host.innerHTML = `
+    <div class="guideline-panel">
+      <h3>Pass criteria</h3>
+      <ul>
+        <li><strong>PASS</strong>: score ≥ ${def.passThreshold}. <strong>NEEDS WORK</strong>: below ${def.passThreshold}.</li>
+        <li>Score = Σ (weight × % of session spent within tolerance) across the graded metrics below.</li>
+        <li>Finish the objective within the session time limit of <strong>${durationMinutes} min</strong> — the session ends automatically when time expires.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Graded metric</th><th>Weight</th></tr></thead>
+        <tbody>${weightRows}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderUpcoming(upcoming) {
   document.getElementById("upcoming-exercise").textContent = upcoming.exercise;
   document.getElementById("upcoming-date").textContent = upcoming.scheduled;
@@ -132,6 +163,12 @@ async function loadLiveSection() {
         ? parseDbDate(me.lastLoginAt).toLocaleString("en-GB", { hour12: false })
         : null,
     });
+
+    // Real session time limit (trainer-configured, default 25 min).
+    const mins = me.sessionDurationMinutes || 25;
+    const durEl = document.getElementById("upcoming-duration");
+    if (durEl) durEl.textContent = `${mins} min`;
+    renderPassCriteria(mins);
   }
 
   // Session history — replaces DUMMY_HISTORY.

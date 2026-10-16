@@ -23,11 +23,11 @@ function reportSummaryCards(report) {
   const mins = report.endedAt
     ? Math.max(1, Math.round((parseDbDate(report.endedAt) - parseDbDate(report.startedAt)) / 60000))
     : null;
-  const breachShare = report.metrics.length > 0
-    ? report.metrics.filter((m) => m.withinTol === false).length / report.metrics.length
-    : 0;
-  const risk = report.score === null || report.score === undefined ? "—"
-    : breachShare < 0.1 ? "Low" : breachShare < 0.3 ? "Medium" : "High";
+  // Risk mirrors the backend rule (GradingService): weighted breach rate
+  // (100 - score) <10 → Low, <30 → Medium, else High.
+  const breachRate = report.score === null || report.score === undefined ? null : 100 - report.score;
+  const risk = breachRate === null ? "—"
+    : breachRate < 10 ? "Low" : breachRate < 30 ? "Medium" : "High";
   return [
     { label: "Flight time", value: mins === null ? "—" : `${mins} min`, delta: report.status },
     { label: "Completion", value: report.status === "completed" ? "100%" : report.status, delta: report.scenario },
@@ -61,4 +61,54 @@ function reportConclusion(report) {
     copy: `Focus next attempt on ${tip.label.toLowerCase()} — ${tip.tip}`,
     tip,
   };
+}
+
+// 05 // visible score calculation — per-metric breakdown table plus the
+// formula string stored by the backend (scoreFormula). Returns "" for live /
+// ungraded reports (score null) so callers can inject it unconditionally.
+// Additive fields only (weight / withinPct / contribution) — old stored
+// reports without them fall back to weights from scenarios.js.
+function reportScoreBreakdown(report) {
+  if (!report || report.score === null || report.score === undefined) return "";
+  const def = scenarioDef(report.scenario);
+  const fallbackWeights = (def && def.weights) || {};
+  const threshold = report.passThreshold || (def && def.passThreshold) || 70;
+
+  const rows = (report.metrics || [])
+    .filter((m) => (m.weight !== null && m.weight !== undefined) || fallbackWeights[m.key])
+    .map((m) => {
+      const weight = m.weight !== null && m.weight !== undefined ? m.weight : fallbackWeights[m.key];
+      const pct = m.withinPct;
+      const contrib = m.contribution;
+      const calc = (pct === null || pct === undefined || contrib === null || contrib === undefined)
+        ? "—"
+        : `${weight} × ${pct.toFixed(1)}% = ${contrib.toFixed(1)}`;
+      return `<tr>
+        <td>${m.label}</td>
+        <td>${weight}</td>
+        <td>${pct === null || pct === undefined ? "—" : pct.toFixed(1) + "%"}</td>
+        <td>${calc}</td>
+      </tr>`;
+    })
+    .join("");
+
+  if (!rows) return "";
+  const verdict = report.score >= threshold ? "PASS" : "NEEDS WORK";
+  // Risk uses the backend rule: weighted breach rate (100 - score).
+  const breach = Math.round((100 - report.score) * 10) / 10;
+  const risk = breach < 10 ? "Low" : breach < 30 ? "Medium" : "High";
+  return `
+    <section class="score-breakdown">
+      <h3>How your score was calculated</h3>
+      <p class="score-breakdown__hint">Each graded metric tracks what % of the session you stayed within its tolerance band. That % is multiplied by the metric's weight; the contributions add up to your score. <strong>PASS needs ${threshold} or more.</strong></p>
+      <table class="score-breakdown__table">
+        <thead><tr><th>Metric</th><th>Weight</th><th>Within tolerance</th><th>Weight × % = contribution</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr><th colspan="3">Total score</th><th>${report.score} / 100 → ${verdict} (threshold ${threshold})</th></tr>
+          <tr><th colspan="3">Risk</th><th>${risk} — weighted breach rate ${breach}% (&lt;10 Low, &lt;30 Medium, else High)</th></tr>
+        </tfoot>
+      </table>
+      ${report.scoreFormula ? `<p class="score-breakdown__formula">Full calculation: <code>${report.scoreFormula}</code></p>` : ""}
+    </section>`;
 }

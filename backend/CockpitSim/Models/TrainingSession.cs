@@ -12,6 +12,10 @@ public class TrainingSession
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
     public string Status { get; set; } = "scheduled";
+
+    // Minutes allowed for this session, snapshotted at start from the
+    // trainee's configured limit (null = no limit / legacy sessions).
+    public int? TimeLimitMinutes { get; set; }
 }
 
 // Trainer feedback attached to a session.

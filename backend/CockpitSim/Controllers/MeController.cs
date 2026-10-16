@@ -14,6 +14,9 @@ namespace CockpitSim.Controllers;
 [Route("api/me")]
 public class MeController : ControllerBase
 {
+    // Fallback when the trainer hasn't configured a per-trainee duration.
+    private const int DefaultSessionMinutes = 25;
+
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly Data.ApplicationDbContext _db;
     private readonly LiveReportService _live;
@@ -52,7 +55,8 @@ public class MeController : ControllerBase
             FullName = user.FullName,
             Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty,
             LastLoginAt = user.LastLoginAt,
-            AssignedTrainerName = trainerName
+            AssignedTrainerName = trainerName,
+            SessionDurationMinutes = user.SessionDurationMinutes ?? DefaultSessionMinutes,
         });
     }
 
@@ -90,11 +94,17 @@ public class MeController : ControllerBase
             Scenario = scenarioKey,
             StartedAt = DateTime.UtcNow,
             Status = "in_progress",
+            TimeLimitMinutes = user?.SessionDurationMinutes ?? DefaultSessionMinutes,
         };
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync();
 
-        return Ok(new { sessionId = session.Id, scenario = session.Scenario });
+        return Ok(new
+        {
+            sessionId = session.Id,
+            scenario = session.Scenario,
+            timeLimitMinutes = session.TimeLimitMinutes,
+        });
     }
 
     // End the trainee's own in-progress session. Grading runs here, once —

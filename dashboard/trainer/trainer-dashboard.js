@@ -33,6 +33,9 @@ let liveClock = null;
 let liveInFlight = false;
 let liveSessionId = null;
 let liveStartedAt = null;
+let liveTimeLimitMinutes = null;
+let liveTimeWarningPlayed = false;
+let TRAINEE_SETTINGS = {}; // traineeId -> sessionDurationMinutes (GET /api/trainees)
 
 function statusLabelFor(sessions) {
 	if (sessions.some((item) => item.status === 'in_progress')) return 'In session';
@@ -394,6 +397,21 @@ function elapsedText() {
 	return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
+// Countdown against the session's configured time limit (null = no limit).
+function liveSubmetaText(sessionId) {
+	let text = `Elapsed ${elapsedText()}${attemptLabelFor(sessionId)}`;
+	if (liveStartedAt && liveTimeLimitMinutes) {
+		const rem = Math.max(0, Math.floor(
+			liveTimeLimitMinutes * 60 - (Date.now() - liveStartedAt.getTime()) / 1000));
+		text += ` • Remaining ${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(rem % 60).padStart(2, '0')}`;
+		if (rem <= 60 && rem > 0 && !liveTimeWarningPlayed) {
+			liveTimeWarningPlayed = true;
+			if (typeof audioAlerts !== 'undefined') audioAlerts.warnTimeExpired();
+		}
+	}
+	return text;
+}
+
 function attemptLabelFor(sessionId) {
 	const s = QUEUE.find((item) => item.sessionId === sessionId);
 	if (!s) return '';
@@ -522,12 +540,14 @@ async function pollLiveOnce() {
 	if (liveSessionId !== target.sessionId) {
 		liveSessionId = target.sessionId;
 		liveStartedAt = parseDbDate(target.startedAt);
+		liveTimeLimitMinutes = null;
+		liveTimeWarningPlayed = false;
 		const name = document.getElementById('live-trainee-name');
 		const meta = document.getElementById('live-trainee-meta');
 		const sub = document.getElementById('live-submeta');
 		if (name) name.textContent = trainee.fullName;
 		if (meta) meta.textContent = `${target.scenario || 'session'} • Live`;
-		if (sub) sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(target.sessionId)}`;
+		if (sub) sub.textContent = liveSubmetaText(target.sessionId);
 		setLiveState('LIVE');
 	}
 
@@ -546,10 +566,13 @@ async function pollLiveOnce() {
 			const meta = document.getElementById('live-trainee-meta');
 			const sub = document.getElementById('live-submeta');
 			if (meta) meta.textContent = `${res.data.scenario || target.scenario || 'session'} • Live`;
-			if (sub) sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(target.sessionId)}`;
-			setLiveState('LIVE');
-			renderLiveMetrics(res.data);
-			renderLiveWarnings(res.data);
+		if (sub) sub.textContent = liveSubmetaText(target.sessionId);
+		setLiveState('LIVE');
+		if (res.data.timeLimitMinutes) liveTimeLimitMinutes = res.data.timeLimitMinutes;
+		renderLiveMetrics(res.data);
+		renderLiveWarnings(res.data);
+		// Audio warning on newly out-of-tolerance metrics (edge-triggered).
+		if (typeof audioAlerts !== 'undefined') audioAlerts.update(res.data.metrics);
 		} else if (res.status === 404) {
 			renderLiveEnded(trainee, target);
 			stopLiveTimers();
@@ -583,7 +606,7 @@ function startLiveTracking() {
 		const sub = document.getElementById('live-submeta');
 		if (sub && liveSessionId) {
 			const t = QUEUE.find((i) => i.sessionId === liveSessionId);
-			sub.textContent = `Elapsed ${elapsedText()}${attemptLabelFor(liveSessionId)}`;
+			sub.textContent = liveSubmetaText(liveSessionId);
 		}
 	}, 1000);
 }
@@ -687,6 +710,13 @@ async function renderSessionSnapshot() {
 	const scorePill = head.querySelector('.trainee-pill');
 	scorePill.textContent = (report.score === null || report.score === undefined) ? 'Score —' : `Score ${report.score}`;
 	box.appendChild(head);
+
+	// Visible score calculation (shared renderer; "" when ungraded).
+	if (typeof reportScoreBreakdown === 'function') {
+		const breakdown = document.createElement('div');
+		breakdown.innerHTML = reportScoreBreakdown(report);
+		if (breakdown.firstChild) box.appendChild(breakdown.firstChild);
+	}
 
 	const metrics = Array.isArray(report.metrics) ? report.metrics : [];
 	if (metrics.length === 0) {
@@ -923,6 +953,92 @@ function bindLogoutButton() {
 	initLogoutConfirm();
 }
 
+// Per-trainee session duration settings (5–60 min, 5-min steps). Roster of
+// assigned trainees comes from GET /api/trainees; a trainee with no sessions
+// yet still appears here so their duration can be configured up front.
+async function loadTraineeSettings() {
+	const res = await apiRequest('/trainees', { auth: true });
+	if (!res.ok || !Array.isArray(res.data)) return;
+	TRAINEE_SETTINGS = {};
+	res.data.forEach((t) => { TRAINEE_SETTINGS[t.traineeId] = t.sessionDurationMinutes; });
+	renderTraineeSettings(res.data);
+}
+
+function renderTraineeSettings(trainees) {
+	const host = document.getElementById('trainee-settings');
+	if (!host) return;
+	if (trainees.length === 0) {
+		host.innerHTML = '<p class="feedback-empty">No trainees assigned to you yet.</p>';
+		return;
+	}
+	const options = [];
+	for (let m = 5; m <= 60; m += 5) options.push(m);
+	host.innerHTML = trainees.map((t) => `
+		<div class="trainee-setting-row" data-trainee="${t.traineeId}">
+			<span class="trainee-setting-name">${t.fullName} <span class="trainee-setting-user">(${t.username})</span></span>
+			<select class="trainee-duration-select" aria-label="Session duration for ${t.fullName}">
+				${options.map((m) => `<option value="${m}"${(t.sessionDurationMinutes || 25) === m ? ' selected' : ''}>${m} min</option>`).join('')}
+			</select>
+			<span class="trainee-setting-status" aria-live="polite"></span>
+		</div>`).join('');
+
+	host.querySelectorAll('.trainee-duration-select').forEach((select) => {
+		select.addEventListener('change', async () => {
+			const row = select.closest('.trainee-setting-row');
+			const status = row.querySelector('.trainee-setting-status');
+			select.disabled = true;
+			status.textContent = 'saving…';
+			const res = await apiRequest(`/trainees/${row.dataset.trainee}/session-duration`, {
+				method: 'PUT',
+				auth: true,
+				body: { minutes: Number(select.value) },
+			});
+			select.disabled = false;
+			if (res.ok) {
+				TRAINEE_SETTINGS[row.dataset.trainee] = Number(select.value);
+				status.textContent = 'saved';
+			} else {
+				status.textContent = res.data?.message || 'save failed';
+			}
+			setTimeout(() => { status.textContent = ''; }, 3000);
+		});
+	});
+}
+
+// Static grading guideline (trainer-only): mirrors GradingService rules —
+// pass threshold, hover weights, risk bands from the weighted breach rate.
+function renderGradingGuidelines() {
+	const host = document.getElementById('grading-guidelines');
+	if (!host || typeof scenarioDef !== 'function') return;
+	const def = scenarioDef('hover');
+	if (!def) return;
+	const weightRows = Object.entries(def.weights || {})
+		.map(([key, w]) => {
+			const metric = def.metrics.find((m) => m.key === key);
+			return `<tr><td>${metric ? metric.label : key}</td><td>${w}</td></tr>`;
+		})
+		.join('');
+	host.innerHTML = `
+		<div class="guideline-panel">
+			<h3>Pass / fail</h3>
+			<ul>
+				<li>Score = Σ (weight × % of session within tolerance) across graded metrics.</li>
+				<li><strong>PASS</strong>: score ≥ ${def.passThreshold}. <strong>NEEDS WORK</strong>: below ${def.passThreshold}.</li>
+				<li>Score breakdown (weight × within-% = contribution) is shown per session in the snapshot above.</li>
+			</ul>
+			<table>
+				<thead><tr><th>Graded metric</th><th>Weight</th></tr></thead>
+				<tbody>${weightRows}</tbody>
+			</table>
+			<h3>Risk bands</h3>
+			<ul>
+				<li>Risk is the weighted breach rate: <code>100 − score</code>.</li>
+				<li><strong>Low</strong>: breach rate &lt; 10 &nbsp;•&nbsp; <strong>Medium</strong>: 10–29.9 &nbsp;•&nbsp; <strong>High</strong>: ≥ 30.</li>
+				<li>Sessions auto-end when the configured time limit expires — an expired session is graded on the telemetry captured up to that point.</li>
+			</ul>
+		</div>`;
+}
+
 async function loadLiveData() {
 	const res = await apiRequest('/sessions/queue', { auth: true });
 	if (!res.ok || !Array.isArray(res.data)) {
@@ -1035,11 +1151,26 @@ function bindTraineeModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
 	loadLiveData();
+	loadTraineeSettings();
+	renderGradingGuidelines();
 	bindLiveDropdown();
 	bindSessionFilters();
 	bindFeedbackButton();
 	bindLogoutButton();
 	bindTraineeModal();
+	// Audio alerts: unlock AudioContext on first gesture + mute toggle.
+	if (typeof audioAlerts !== 'undefined') {
+		const muteBtn = document.getElementById('mute-btn');
+		if (muteBtn) {
+			const syncMuteBtn = () => { muteBtn.textContent = audioAlerts.muted ? 'Sound: Off' : 'Sound: On'; };
+			syncMuteBtn();
+			muteBtn.addEventListener('click', () => {
+				audioAlerts.setMuted(!audioAlerts.muted);
+				syncMuteBtn();
+			});
+		}
+		document.addEventListener('click', () => audioAlerts.unlock(), { once: true });
+	}
 	window.addEventListener('beforeunload', stopLiveTimers);
 });
 }
