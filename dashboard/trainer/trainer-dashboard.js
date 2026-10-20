@@ -20,7 +20,8 @@ if (session) {
 	document.getElementById('hud-username').textContent = session.username.toUpperCase();
 
 let QUEUE = [];            // raw queue rows from the API
-let TRAINTEES = [];        // roster derived from the queue (drives dropdown + analytics)
+let TRAINTEES = [];        // roster: all assigned trainees (drives dropdown + analytics)
+let ALL_TRAINEES = [];     // GET /api/trainees — full assigned roster incl. sessionless
 let selectedTraineeId = null;
 let selectedSessionId = null; // specific session shown in the feedback snapshot
 const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note, sessionId?}]
@@ -67,7 +68,9 @@ function relativeTime(iso) {
 	return `${hours}h ${minutes % 60}m ago`;
 }
 
-// Build the per-trainee roster from raw queue rows.
+// Build the per-trainee roster. Queue rows supply session data; ALL_TRAINEES
+// (GET /api/trainees) guarantees every assigned trainee is listed — even one
+// with zero sessions — so newly registered trainees appear immediately.
 function buildRoster() {
 	const byTrainee = new Map();
 
@@ -94,11 +97,31 @@ function buildRoster() {
 			hasLive: sessions.some((s) => s.status === 'in_progress'),
 		});
 	}
+
+	// Assigned trainees with no queue entry yet: add them so they can be
+	// selected in the dropdown before their first session.
+	ALL_TRAINEES.forEach((t) => {
+		if (byTrainee.has(t.traineeId)) return;
+		TRAINTEES.push({
+			id: t.traineeId,
+			fullName: t.fullName,
+			callsign: (t.username || '').toUpperCase(),
+			status: 'No sessions yet',
+			currentExercise: 'Unassigned exercise',
+			lastActiveAt: null,
+			sessionStateLabel: '—',
+			sessionCount: 0,
+			completedCount: 0,
+			hasLive: false,
+		});
+	});
+
 	sortRoster();
 }
 
 function rosterRank(t) {
 	if (t.hasLive) return 0;
+	if (t.sessionCount === 0) return 4; // no sessions yet — sort below active trainees
 	const notes = FEEDBACK_CACHE[t.id];
 	const awaiting = Array.isArray(notes)
 		? (t.completedCount > 0 && notes.length === 0)
@@ -112,7 +135,10 @@ function sortRoster() {
 	TRAINTEES.sort((a, b) => {
 		const r = rosterRank(a) - rosterRank(b);
 		if (r !== 0) return r;
-		return parseDbDate(b.lastActiveAt) - parseDbDate(a.lastActiveAt);
+		// lastActiveAt can be null for sessionless trainees — treat as oldest.
+		const da = a.lastActiveAt ? parseDbDate(a.lastActiveAt).getTime() : 0;
+		const db = b.lastActiveAt ? parseDbDate(b.lastActiveAt).getTime() : 0;
+		return db - da;
 	});
 }
 
@@ -1040,11 +1066,17 @@ function renderGradingGuidelines() {
 }
 
 async function loadLiveData() {
-	const res = await apiRequest('/sessions/queue', { auth: true });
+	// Both calls in parallel: the queue drives sessions/analytics, while
+	// /api/trainees guarantees sessionless assigned trainees are rostered.
+	const [res, traineesRes] = await Promise.all([
+		apiRequest('/sessions/queue', { auth: true }),
+		apiRequest('/trainees', { auth: true }),
+	]);
 	if (!res.ok || !Array.isArray(res.data)) {
 		console.error('[trainer] failed to load session queue', res.status, res.data);
 		return;
 	}
+	ALL_TRAINEES = (traineesRes.ok && Array.isArray(traineesRes.data)) ? traineesRes.data : [];
 
 	QUEUE = res.data;
 	buildRoster();
@@ -1138,9 +1170,10 @@ function bindTraineeModal() {
 
 			closeTraineeModal();
 			showTraineeToast(`Trainee "${username}" created. They can now log in.`);
-			// New trainee has no sessions yet, so the queue-driven roster will
-			// show them only once they start a session. Spike: refresh anyway.
+			// Roster merges GET /api/trainees, so the new trainee appears in
+			// the dropdown immediately (marked "No sessions yet").
 			loadLiveData();
+			loadTraineeSettings();
 		} catch (err) {
 			console.error('[trainer] trainee creation failed:', err);
 			errorEl.textContent = 'Cannot reach the server. Is the backend running?';

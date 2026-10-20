@@ -161,7 +161,15 @@ if (Directory.Exists(dashboardPath))
     app.UseStaticFiles(new StaticFileOptions
     {
         FileProvider = new PhysicalFileProvider(dashboardPath),
-        RequestPath = "/dashboard"
+        RequestPath = "/dashboard",
+        // Dashboard files can change whenever the sim PC's backend is updated,
+        // and WebView2/Edge may serve them from disk cache without revalidating
+        // (this bit the trainer PC once). "no-cache" keeps the cache for speed
+        // but forces a revalidation (304 if unchanged) on every request.
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+        }
     });
 }
 else
