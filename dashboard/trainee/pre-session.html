@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../shared/css/dashboard-shell.css">
 <link rel = "stylesheet" href = "../shared/css/logout-modal.css">
 <link rel="stylesheet" href="trainee-dashboard.css">
+<link rel="stylesheet" href="report-panel.css">
 </head>
 <body class="app-shell trainee-home" data-default-route="mission">
   <aside class="app-sidebar" aria-label="Trainee navigation">
@@ -92,6 +93,7 @@
     <!-- Session History Panel -->
     <section class="panel panel-history" aria-labelledby="history-heading" data-shell-view="flight-log">
       <div class="section-intro"><div><h2 id="history-heading">Flight log</h2><p>Every flight you have started appears here.</p></div><span class="section-count" id="history-count">— flights</span></div>
+      <p id="history-message" class="visually-hidden" aria-live="polite"></p>
       <div class="history-scroll"><table class="history-table">
         <thead>
           <tr>

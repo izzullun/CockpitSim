@@ -5,99 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CockpitSim - Trainee Post Session</title>
   <link rel="stylesheet" href="../shared/css/main.css">
+  <link rel="stylesheet" href="../shared/css/theme.css">
   <link rel="stylesheet" href="../shared/css/logout-modal.css">
-  <link rel="stylesheet" href="post-session.css">
+  <link rel="stylesheet" href="post-session-v2.css">
+  <link rel="stylesheet" href="report-panel.css">
 </head>
-<body>
-  <div class="post-session-screen scanlines">
+<body class="trainee-result">
+  <div class="post-session-screen">
     <header class="hud-bar">
-      <div class="hud-item">
-        <span class="hud-label">CALLSIGN</span>
-        <span class="hud-value" id="hud-username">TRAINEE_ADAM</span>
-      </div>
-      <div class="hud-item hud-center">
-        <span class="hud-label">STATUS</span>
-        <span class="hud-value hud-status" id="hud-status">POST-SESSION REPORT</span>
-      </div>
-      <div class="hud-item hud-actions">
-        <button class="logout-btn" id="logout-btn" type="button">Logout</button>
-      </div>
+      <a class="top-brand" href="./pre-session.html#mission">CockpitSim</a>
+      <span class="top-flight">Flight result</span>
+      <span class="hud-value" id="hud-username">Pilot</span>
+      <span class="visually-hidden" id="hud-status">Post-session report</span>
+      <button class="logout-btn" id="logout-btn" type="button">Log out</button>
     </header>
 
-    <main class="dashboard-grid">
-      <section class="panel panel-summary" aria-labelledby="summary-heading">
-        <div class="panel-corner panel-corner-tl"></div>
-        <div class="panel-corner panel-corner-br"></div>
-        <h2 id="summary-heading" class="panel-title">
-          <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M5 21V7l5-4 4 3 5-2v17"></path>
-            <path d="M9 13l3 3 7-7"></path>
-          </svg>
-          <span>01 // SESSION SUMMARY</span>
-        </h2>
-        <div class="summary-hero">
-          <div>
-            <div class="summary-label">Exercise</div>
-            <div class="summary-value" id="summary-exercise">Autorotation Recovery — Attempt 4</div>
-          </div>
-          <div class="summary-pill success" id="summary-outcome">PASS</div>
-        </div>
-        <div class="summary-grid" id="summary-cards"></div>
-        <div id="score-breakdown"></div>
-      </section>
-
-      <section class="panel panel-report" aria-labelledby="report-heading">
-        <div class="panel-corner panel-corner-tl"></div>
-        <div class="panel-corner panel-corner-br"></div>
-        <h2 id="report-heading" class="panel-title">
-          <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 19V5"></path>
-            <path d="M4 19h16"></path>
-            <rect x="7" y="11" width="3" height="8"></rect>
-            <rect x="12" y="8" width="3" height="11"></rect>
-            <rect x="17" y="5" width="3" height="14"></rect>
-          </svg>
-          <span>02 // PERFORMANCE REPORT</span>
-        </h2>
-        <div class="report-layout">
-          <article class="report-block">
-            <h3 class="block-title">Telemetry snapshot</h3>
-            <dl class="stats-list" id="telemetry-stats"></dl>
-          </article>
-          <article class="report-block">
-            <h3 class="block-title">Trainer notes</h3>
-            <ul class="notes-list" id="trainer-notes"></ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel panel-timeline" aria-labelledby="timeline-heading">
-        <div class="panel-corner panel-corner-tl"></div>
-        <div class="panel-corner panel-corner-br"></div>
-        <h2 id="timeline-heading" class="panel-title">
-          <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 12h4l2-4 4 8 2-4h4"></path>
-            <circle cx="12" cy="12" r="9"></circle>
-          </svg>
-          <span>03 // SESSION TIMELINE</span>
-        </h2>
-        <ol class="timeline-list" id="timeline-list"></ol>
-      </section>
-
-      <section class="panel panel-actions" aria-labelledby="actions-heading">
-        <div class="panel-corner panel-corner-tl"></div>
-        <div class="panel-corner panel-corner-br"></div>
-        <h2 id="actions-heading" class="panel-title">
-          <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M5 12h12"></path>
-            <path d="M13 6l6 6-6 6"></path>
-          </svg>
-          <span>04 // NEXT ACTIONS</span>
-        </h2>
-        <p class="action-copy" id="action-copy">Review the full session report before starting the next attempt.</p>
-        <div class="action-row">
-          <a class="action-link action-primary" href="./pre-session.html">Run another session</a>
-        </div>
+    <main class="result-workspace">
+      <section class="result-card" aria-live="polite">
+        <div class="result-heading"><p id="summary-exercise">Flight report</p><h1 id="result-verdict">Analysing flight…</h1><p id="result-subline">Preparing your result from the captured flight data.</p></div>
+        <div class="result-center"><div class="score-ring" id="score-ring"><svg viewBox="0 0 240 240" aria-hidden="true"><circle class="score-track" cx="120" cy="120" r="104"/><circle class="score-progress" id="score-progress" cx="120" cy="120" r="104"/></svg><div class="score-ring-label"><strong id="result-score">—</strong><span id="score-unit">score / 100</span></div></div><div class="result-stars" id="result-stars" aria-label="Result rating"></div><p class="result-comparison" id="result-comparison" hidden></p></div>
+        <div class="result-bottom"><div class="result-stats"><div><span>Flight time</span><strong id="result-flight-time">—</strong></div><div><span>Metrics tracked</span><strong id="result-metrics-count">—</strong></div><div><span>Time limit</span><strong id="result-limit">—</strong></div></div><div class="result-insights" id="result-insights" hidden><div><span>Strongest control</span><strong id="result-strongest">—</strong></div><div><span>Focus next time</span><strong id="result-focus">—</strong><p id="result-tip"></p></div></div><div class="result-actions"><a class="result-primary" href="./pre-session.html#mission">Fly again</a><button class="result-secondary" id="view-full-report" type="button" disabled>View full report</button></div></div>
       </section>
     </main>
   </div>
@@ -106,7 +33,6 @@
   <script src="../shared/js/auth.js"></script>
   <script src="../shared/js/logout-modal.js"></script>
   <script src="../shared/js/scenarios.js"></script>
-  <script src="../shared/js/report-renderer.js"></script>
-  <script src="post-session.js"></script>
+  <script type="module" src="post-session-v2.js"></script>
 </body>
 </html>

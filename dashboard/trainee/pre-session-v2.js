@@ -1,4 +1,5 @@
 import { historyEntries, missionFromHistory, profileStats } from './trainee-view-model.js';
+import { openReportPanel } from './report-panel.js';
 
 const session = requireRole(['trainee', 'admin']);
 let currentMission = { scenario: 'hover' };
@@ -89,10 +90,17 @@ function renderHistory(sessions) {
     state.append(badge);
     const report = document.createElement('td');
     if (entry.canOpenReport) {
-      const link = document.createElement('a');
+      const link = document.createElement('button');
       link.className = 'report-open';
-      link.href = `./post-session.html?session=${encodeURIComponent(entry.sessionId)}`;
+      link.type = 'button';
       link.textContent = 'View result';
+      link.addEventListener('click', async () => {
+        link.disabled = true;
+        const response = await apiRequest(`/me/sessions/${entry.sessionId}/report`, { auth: true });
+        link.disabled = false;
+        if (response.ok && response.data) openReportPanel(response.data);
+        else document.getElementById('history-message').textContent = 'This report is not ready yet. Try again shortly.';
+      });
       report.append(link);
     } else report.textContent = '—';
     row.append(flight, date, duration, state, report);
