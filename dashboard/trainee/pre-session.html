@@ -1,25 +1,22 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name= "viewport" content="width=device-width, initial scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CockpitSim - Trainee Dashboard</title>
 <link rel = "stylesheet" href = "../shared/css/main.css">
 <link rel="stylesheet" href="../shared/css/theme.css">
 <link rel="stylesheet" href="../shared/css/dashboard-shell.css">
 <link rel = "stylesheet" href = "../shared/css/logout-modal.css">
-<link rel = "stylesheet" href = "pre-session.css">
+<link rel="stylesheet" href="trainee-dashboard.css">
 </head>
-<body class="app-shell" data-default-route="mission">
+<body class="app-shell trainee-home" data-default-route="mission">
   <aside class="app-sidebar" aria-label="Trainee navigation">
     <a class="app-brand" href="#mission" aria-label="CockpitSim home">
       <span class="app-brand-mark" aria-hidden="true">C</span>
       <span class="app-brand-name">CockpitSim</span>
     </a>
     <nav class="app-nav" aria-label="Dashboard sections">
-      <a class="app-nav-link" href="#profile" title="Pilot profile" aria-label="Pilot profile">
-        <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-        <span class="app-nav-label">Pilot profile</span>
-      </a>
       <a class="app-nav-link" href="#mission" title="Mission" aria-label="Mission">
         <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>
         <span class="app-nav-label">Mission</span>
@@ -28,24 +25,28 @@
         <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         <span class="app-nav-label">Flight log</span>
       </a>
+      <a class="app-nav-link" href="#profile" title="Pilot profile" aria-label="Pilot profile">
+        <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span class="app-nav-label">Pilot profile</span>
+      </a>
     </nav>
     <div class="app-sidebar-account" data-shell-account></div>
   </aside>
   <div class="app-main">
-  <h1 class="app-page-title visually-hidden">Trainee dashboard</h1>
 
   <!-- HUD Status Bar -->
   <header class = "hud-bar">
+    <h1 class="app-page-title">Mission</h1>
     <div class="hud-item">
-      <span class ="hud-label">CALLSIGN</span>
-      <span class ="hud-value" id = "hud-username">TRAINEE_ADAM</span>
+      <span class ="hud-label">Pilot</span>
+      <span class ="hud-value" id = "hud-username">—</span>
     </div>
     <div class="hud-item hud-center">
-      <span class="hud-label">STATUS</span>
-      <span class="hud-value hud-status" id="hud-status">STANDBY</span>
+      <span class="hud-label">Status</span>
+      <span class="hud-value hud-status" id="hud-status">Ready</span>
     </div>
     <div class="hud-item hud-actions">
-      <button class="logout-btn" id="logout-btn" type="button">Logout</button>
+      <button class="logout-btn" id="logout-btn" type="button">Log out</button>
     </div>
   </header>
 
@@ -53,93 +54,58 @@
  
     <!-- Profile Panel -->
     <section class="panel panel-profile" aria-labelledby="profile-heading" data-shell-view="profile">
-      <div class="panel-corner panel-corner-tl"></div>
-      <div class="panel-corner panel-corner-br"></div>
-      <h2 id="profile-heading" class="panel-title">
-        <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M20 21a8 8 0 0 0-16 0"></path>
-          <circle cx="12" cy="8" r="4"></circle>
-        </svg>
-        <span>01 // PILOT PROFILE</span>
-      </h2>
-      <dl class="profile-list">
-        <div class="profile-row">
-          <dt>Full Name</dt>
-          <dd id="profile-name">Adam Haikal</dd>
-        </div>
-        <div class="profile-row">
-          <dt>Role</dt>
-          <dd id="profile-role">Trainee</dd>
-        </div>
-        <div class="profile-row">
-          <dt>Assigned Trainer</dt>
-          <dd id="profile-trainer">Aiman Hakim Redza</dd>
-        </div>
-        <div class="profile-row">
-          <dt>Last Login</dt>
-          <dd id="profile-last-login">2026-07-12 09:41</dd>
-        </div>
-      </dl>
+      <div class="section-intro"><div><h2 id="profile-heading">Pilot profile</h2><p>Your training identity and flight record.</p></div></div>
+      <div class="profile-content">
+        <div class="profile-identity"><span class="profile-avatar" aria-hidden="true">P</span><div><span class="profile-caption">Trainee pilot</span><strong id="profile-name">Loading…</strong></div></div>
+        <dl class="profile-list">
+          <div class="profile-row"><dt>Role</dt><dd id="profile-role">—</dd></div>
+          <div class="profile-row"><dt>Trainer</dt><dd id="profile-trainer">—</dd></div>
+          <div class="profile-row"><dt>Last login</dt><dd id="profile-last-login">—</dd></div>
+        </dl>
+        <div class="profile-stats"><div><span>Sessions flown</span><strong id="profile-sessions">—</strong></div><div><span>Flight time</span><strong id="profile-flight-time">—</strong></div></div>
+      </div>
     </section>
  
     <!-- Upcoming Session Panel -->
     <section class="panel panel-upcoming" aria-labelledby="upcoming-heading" data-shell-view="mission">
-      <div class="panel-corner panel-corner-tl"></div>
-      <div class="panel-corner panel-corner-br"></div>
-      <h2 id="upcoming-heading" class="panel-title">
-        <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-          <path d="M16 3v4M8 3v4M3 9h18"></path>
-        </svg>
-        <span>02 // ASSIGNED SESSION</span>
-      </h2>
-      <div class="upcoming-body">
-        <p class="upcoming-exercise" id="upcoming-exercise">Autorotation Recovery — Attempt 4</p>
-        <p class="upcoming-meta">
-          <span>Scheduled: <span id="upcoming-date">2026-07-21 14:00</span></span>
-          <span>Est. Duration: <span id="upcoming-duration">25 min</span></span>
-        </p>
-        <p class="upcoming-notes" id="upcoming-notes">
-          Focus on collective timing during flare. Trainer notes from last attempt available below.
-        </p>
-        <button class="btn-start-session" id="btn-start-session" type="button">
-          <span class="btn-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M8 5l11 7-11 7z"></path>
-            </svg>
-          </span>
-          <span>START SESSION</span>
-        </button>
-        <p class="upcoming-hint">Opens the live session view — start MSFS 2020 yourself for now; auto-launch from here is coming.</p>
-        <div id="pass-criteria"></div>
+      <div class="mission-lead">
+        <div class="mission-copy">
+          <p class="mission-kicker">Flight training</p>
+          <h2 id="upcoming-heading" class="mission-title"><span id="upcoming-exercise">Hover practice</span></h2>
+          <p class="mission-brief" id="mission-brief">Hold a steady hover and build precise control close to the ground.</p>
+          <p class="mission-meta"><span id="upcoming-date">On-demand flight</span><span class="meta-separator" aria-hidden="true">·</span><span>Time limit: <strong id="upcoming-duration">Set when you start</strong></span></p>
+          <p class="mission-note" id="upcoming-notes" hidden></p>
+          <button class="btn-start-session" id="btn-start-session" type="button">Start session <span aria-hidden="true">→</span></button>
+          <p class="mission-help" id="start-help">Your session starts here. The simulator may open through the launcher.</p>
+        </div>
+        <div class="mission-mark" aria-hidden="true"><span class="mission-mark-ring"><span class="mission-mark-cross">+</span></span><span class="mission-mark-caption">Steady hands. Clear horizon.</span></div>
+      </div>
+      <div class="mission-lower">
+        <section class="mission-metrics" aria-label="How this mission is scored">
+          <div class="mission-section-heading"><h3>What matters in this flight</h3><span id="pass-mark">Pass mark: 70</span></div>
+          <div class="weight-list" id="weight-list"></div>
+        </section>
+        <details class="scoring-details" id="pass-criteria"><summary>How scoring works <span aria-hidden="true">+</span></summary><div id="scoring-explanation"></div></details>
       </div>
     </section>
  
     <!-- Session History Panel -->
     <section class="panel panel-history" aria-labelledby="history-heading" data-shell-view="flight-log">
-      <div class="panel-corner panel-corner-tl"></div>
-      <div class="panel-corner panel-corner-br"></div>
-      <h2 id="history-heading" class="panel-title">
-        <svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="9"></circle>
-          <path d="M12 7v5l3 2"></path>
-        </svg>
-        <span>03 // SESSION HISTORY</span>
-      </h2>
-      <table class="history-table">
+      <div class="section-intro"><div><h2 id="history-heading">Flight log</h2><p>Every flight you have started appears here.</p></div><span class="section-count" id="history-count">— flights</span></div>
+      <div class="history-scroll"><table class="history-table">
         <thead>
           <tr>
-            <th scope="col">Attempt</th>
+            <th scope="col">Flight</th>
             <th scope="col">Date</th>
             <th scope="col">Duration</th>
-            <th scope="col">Outcome</th>
-            <th scope="col">Feedback</th>
+            <th scope="col">State</th>
+            <th scope="col">Report</th>
           </tr>
         </thead>
         <tbody id="history-body">
-          <!-- rows injected by pre-session.js from dummy data -->
+          <tr><td colspan="5">Loading flights…</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
  
   </main>
@@ -149,7 +115,7 @@
   <script src="../shared/js/auth.js"></script>
   <script src="../shared/js/logout-modal.js"></script>
   <script src="../shared/js/scenarios.js"></script>
-  <script src="pre-session.js"></script>
+  <script type="module" src="pre-session-v2.js"></script>
   <script type="module" src="../shared/js/dashboard-shell.js"></script>
 </body>
 </html>
