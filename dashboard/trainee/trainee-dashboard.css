@@ -92,7 +92,7 @@ body.trainee-home .dashboard-grid {
   .weight-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
 }
 @media (max-width: 640px) {
-  body.trainee-home { overflow: auto; }
+  body.trainee-home { overflow: hidden; padding-bottom: 4.25rem; }
   .trainee-home .app-main { height: calc(100dvh - 4.25rem); }
   body.trainee-home .hud-bar { grid-template-columns: minmax(0,1fr) auto; gap: .6rem; flex-basis: 58px; }
   .trainee-home .hud-item { display: none; }

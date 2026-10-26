@@ -52,7 +52,7 @@ function renderStars(count) {
   for (let index = 0; index < 3; index++) {
     const star = document.createElement('span');
     star.className = index < count ? 'is-earned' : '';
-    star.textContent = '★';
+    star.setAttribute('aria-hidden', 'true');
     host.append(star);
   }
   host.setAttribute('aria-label', `${count} out of 3 result stars`);

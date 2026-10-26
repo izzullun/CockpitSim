@@ -1,0 +1,39 @@
+/* Phase 2 correction: each trainer review step uses the full canvas. */
+.review-toolbar { display: none; }
+body.app-shell[data-active-route="sessions"] .app-main { height: 100dvh; overflow: hidden; }
+body.app-shell[data-active-route="sessions"] .trainer-screen { height: 100%; min-height: 0; display: flex; flex-direction: column; background: var(--ui-ground); }
+body.app-shell[data-active-route="sessions"] .hud-bar { flex: 0 0 auto; }
+body.app-shell[data-active-route="sessions"] .review-toolbar { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; width: min(100%,94rem); margin: 0 auto; padding: clamp(1rem,2vw,1.6rem) clamp(1rem,2.5vw,2rem) 0; }
+.review-toolbar > div:first-child { display: grid; gap: .3rem; }
+.review-toolbar strong { color: var(--ui-text); font: 600 clamp(1.25rem,1.8vw,1.65rem) var(--ui-font); }
+.review-toolbar span { color: var(--ui-muted); font: 400 .86rem var(--ui-font); }
+.review-tabs { display: flex; gap: 1.2rem; border-bottom: 1px solid var(--ui-line); }
+.review-tabs button { min-height: 42px; padding: .55rem 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ui-muted); white-space: nowrap; font: 500 .88rem var(--ui-font); }
+.review-tabs button.is-active { border-color: var(--ui-cyan); color: var(--ui-text); }
+body.app-shell[data-active-route="sessions"] .trainer-screen .dashboard-grid { flex: 1; min-height: 0; display: block; width: min(100%,94rem); padding: clamp(.9rem,2vw,1.5rem) clamp(1rem,2.5vw,2rem); }
+body.app-shell[data-active-route="sessions"] .panel-sessions,
+body.app-shell[data-active-route="sessions"] .panel-feedback { width: 100%; height: 100%; min-height: 0; margin: 0; padding: clamp(1.25rem,2.2vw,2rem); background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 8px; overflow: hidden; }
+body.app-shell[data-active-route="sessions"] .panel-sessions { display: flex; flex-direction: column; }
+body.app-shell[data-active-route="sessions"] .panel-feedback { display: none; overflow: auto; }
+body.app-shell[data-active-route="sessions"][data-review-pane="detail"] .panel-sessions { display: none; }
+body.app-shell[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback { display: block; }
+body.app-shell[data-active-route="sessions"] .panel-corner { display: none; }
+body.app-shell[data-active-route="sessions"] .panel-title { color: var(--ui-text); font: 600 1.13rem var(--ui-font); text-transform: none; letter-spacing: 0; }
+body.app-shell[data-active-route="sessions"] .panel-title-icon { display: none; }
+body.app-shell[data-active-route="sessions"] .session-table-wrap { flex: 1; min-height: 0; max-height: none; overflow: auto; }
+body.app-shell[data-active-route="sessions"] .session-table th { position: sticky; top: 0; z-index: 1; background: var(--ui-panel); color: var(--ui-muted); font: 500 .76rem var(--ui-font); letter-spacing: 0; }
+body.app-shell[data-active-route="sessions"] .session-table td { color: var(--ui-text); font: 400 .86rem var(--ui-font); }
+body.app-shell[data-active-route="sessions"] .session-table th,
+body.app-shell[data-active-route="sessions"] .session-table td { padding: .9rem .75rem; border-color: var(--ui-line); }
+body.app-shell[data-active-route="sessions"] .session-row:hover,
+body.app-shell[data-active-route="sessions"] .session-row.is-selected { background: var(--ui-raised); }
+body.app-shell[data-active-route="sessions"] .queue-link { color: var(--ui-cyan); font-weight: 600; }
+body.app-shell[data-active-route="sessions"] .chip { min-height: 34px; border-color: var(--ui-line); border-radius: 4px; color: var(--ui-muted); font: 500 .82rem var(--ui-font); letter-spacing: 0; text-transform: none; }
+body.app-shell[data-active-route="sessions"] .chip.is-active { background: var(--ui-raised); border-color: var(--ui-muted); color: var(--ui-text); }
+body.app-shell[data-active-route="sessions"] .session-count { color: var(--ui-muted); font: .8rem var(--ui-font); }
+body.app-shell[data-active-route="sessions"] .feedback-target { color: var(--ui-muted); font: .9rem/1.5 var(--ui-font); letter-spacing: 0; }
+body.app-shell[data-active-route="sessions"] .session-snapshot { margin-bottom: 1.3rem; }
+body.app-shell[data-active-route="sessions"] .snapshot-metrics { grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); }
+body.app-shell[data-active-route="sessions"] .feedback-input { min-height: 100px; background: var(--ui-raised); border-color: var(--ui-line); border-radius: 4px; font: .92rem/1.5 var(--ui-font); }
+body.app-shell[data-active-route="sessions"] .feedback-stream { max-height: 220px; overflow: auto; }
+@media (max-width: 640px) { body.app-shell[data-active-route="sessions"] { overflow: hidden; padding-bottom: 4.25rem; } body.app-shell[data-active-route="sessions"] .app-main { height: calc(100dvh - 4.25rem); } body.app-shell[data-active-route="sessions"] .review-toolbar { display: block; } .review-tabs { margin-top: .8rem; } body.app-shell[data-active-route="sessions"] .trainer-screen .dashboard-grid { padding: .7rem; } body.app-shell[data-active-route="sessions"] .panel-sessions, body.app-shell[data-active-route="sessions"] .panel-feedback { padding: 1rem; } body.app-shell[data-active-route="sessions"] .session-table-wrap { overflow-x: auto; } body.app-shell[data-active-route="sessions"] .session-table { min-width: 670px; } }

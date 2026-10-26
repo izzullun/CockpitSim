@@ -76,7 +76,8 @@ export function openReportPanel(report) {
   panel.replaceChildren();
   const header = node('div', 'report-drawer-head');
   const title = node('div');
-  title.append(node('span', 'report-drawer-caption', 'Flight report'), node('h2', '', report.scenario || 'Session'));
+  title.append(node('span', 'report-drawer-caption', 'Flight report'),
+    node('h2', '', scenarioDef(report.scenario)?.title || report.scenario || 'Session'));
   const close = node('button', 'report-drawer-close', 'Close');
   close.type = 'button';
   close.addEventListener('click', () => panel.close());

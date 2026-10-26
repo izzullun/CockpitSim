@@ -10,6 +10,7 @@
 	<link rel="stylesheet" href="../shared/css/logout-modal.css">
 	<link rel="stylesheet" href="trainer-dashboard.css">
 	<link rel="stylesheet" href="trainee-modal.css">
+	<link rel="stylesheet" href="trainer-review.css">
 </head>
 	<body class="app-shell" data-default-route="overview">
 		<aside class="app-sidebar" aria-label="Trainer navigation">
@@ -42,6 +43,10 @@
 				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
 			</div>
 		</header>
+		<div class="review-toolbar" data-shell-view="sessions" role="group" aria-label="Review session view">
+			<div><strong>Review sessions</strong><span>Choose a flight, then review its report and feedback.</span></div>
+			<div class="review-tabs"><button type="button" class="is-active" data-review-pane="queue">Sessions</button><button type="button" data-review-pane="detail">Report &amp; feedback</button></div>
+		</div>
 
 		<main class="dashboard-grid">
 			<section class="panel panel-live" aria-labelledby="live-heading" data-shell-view="live-monitor">
@@ -107,7 +112,7 @@
 						<rect x="4" y="5" width="16" height="14" rx="2"></rect>
 						<path d="M8 9h8M8 12h5M8 15h6"></path>
 					</svg>
-					<span>03 // SESSION HISTORY</span>
+					<span>Sessions</span>
 
 				</h2>
 				<div class="session-filters" role="group" aria-label="Filter sessions">
@@ -158,7 +163,7 @@
 						<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
 						<path d="M8 10h8M8 14h5"></path>
 					</svg>
-					<span>04 // FEEDBACK</span>
+					<span>Report and feedback</span>
 				</h2>
 				<p class="feedback-target" id="feedback-target">Selected trainee: —</p>
 				<div id="session-snapshot" class="session-snapshot" aria-live="polite"></div>
@@ -226,5 +231,6 @@
 	<script src="../shared/js/report-renderer.js"></script>
 	<script src="trainer-dashboard.js"></script>
 	<script type="module" src="../shared/js/dashboard-shell.js"></script>
+	<script type="module" src="trainer-review.js"></script>
 </body>
 </html>
