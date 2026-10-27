@@ -11,7 +11,6 @@ let pollTimer = null;
 let clockTimer = null;
 let startedAt = null;
 let timeLimitMinutes = null;
-let timeWarningPlayed = false;
 let redirected = false;
 
 function elapsedText() {
@@ -36,11 +35,6 @@ function renderRemaining() {
   row.hidden = false;
   dd.textContent = `${String(Math.floor(rem / 60)).padStart(2, "0")}:${String(rem % 60).padStart(2, "0")}`;
   dd.classList.toggle("remaining-low", rem <= 60);
-  // Final-minute audio warning (once per session).
-  if (rem <= 60 && rem > 0 && !timeWarningPlayed) {
-    timeWarningPlayed = true;
-    if (typeof audioAlerts !== "undefined") audioAlerts.warnTimeExpired();
-  }
 }
 
 function renderObjectives(scenarioKey) {
@@ -133,8 +127,6 @@ function renderLive(report) {
   }
   renderRemaining();
   renderFlags(report);
-  // Audio warning on newly out-of-tolerance metrics (edge-triggered).
-  if (typeof audioAlerts !== "undefined") audioAlerts.update(report.metrics);
 }
 
 async function pollOnce() {
@@ -238,18 +230,5 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRemaining();
   }, 1000);
 
-  // Audio alerts: unlock AudioContext on first gesture + mute toggle.
-  if (typeof audioAlerts !== "undefined") {
-    const muteBtn = document.getElementById("mute-btn");
-    const syncMuteBtn = () => {
-      muteBtn.textContent = audioAlerts.muted ? "Sound: Off" : "Sound: On";
-    };
-    syncMuteBtn();
-    muteBtn.addEventListener("click", () => {
-      audioAlerts.setMuted(!audioAlerts.muted);
-      syncMuteBtn();
-    });
-    document.addEventListener("click", () => audioAlerts.unlock(), { once: true });
-  }
   initLogoutConfirm();
 });

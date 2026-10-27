@@ -1,0 +1,162 @@
+/* Shared dashboard frame. Existing dashboard sections keep their page styles
+   during Phase 1; later phases can restyle their content inside this canvas. */
+body.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--ui-sidebar-width) minmax(0, 1fr);
+  background: var(--ui-ground);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.4rem .9rem;
+  background: var(--ui-panel);
+  border-right: 1px solid var(--ui-line);
+  z-index: 5;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .35rem .55rem;
+  color: var(--ui-text);
+  font: 600 1rem/1.2 var(--ui-font);
+  letter-spacing: .02em;
+  text-decoration: none;
+}
+
+.app-brand-mark {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-cyan);
+  color: var(--ui-cyan);
+  border-radius: .45rem;
+  font-weight: 700;
+}
+
+.app-nav {
+  display: grid;
+  align-content: start;
+  gap: .35rem;
+}
+
+.app-nav-link {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .75rem;
+  border-radius: .5rem;
+  color: var(--ui-muted);
+  font-size: .94rem;
+  text-decoration: none;
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.app-nav-link:hover { color: var(--ui-text); background: rgba(255,255,255,.045); }
+.app-nav-link[aria-current="page"] { color: var(--ui-text); background: transparent; }
+.app-nav-link[aria-current="page"] .app-nav-label { position: relative; }
+.app-nav-link[aria-current="page"] .app-nav-label::after {
+  position: absolute;
+  right: 0;
+  bottom: -.35rem;
+  left: 0;
+  height: 1px;
+  background: var(--ui-cyan);
+  content: "";
+}
+.app-nav-icon { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; }
+
+.app-sidebar-account {
+  margin-top: auto;
+  padding: .8rem .65rem;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-muted);
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
+
+.app-main { min-width: 0; }
+.app-topbar { min-height: 4.5rem; }
+.app-page-title { margin: 0; color: var(--ui-text); font: 600 1rem/1.2 var(--ui-font); }
+
+body.app-shell .hud-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  min-height: 4.5rem;
+  padding-inline: clamp(1rem, 3vw, 2.5rem);
+  background: rgba(6,11,20,.96);
+  border-bottom: 1px solid var(--ui-line);
+}
+
+body.app-shell .dashboard-grid {
+  display: block;
+  width: min(100%, 70rem);
+  max-width: none;
+  margin: 0 auto;
+  padding: clamp(1rem, 2.5vw, 2.25rem);
+}
+body.app-shell .dashboard-grid > .panel { margin-inline: auto; }
+
+/* A trainer reviews one session from a queue, then writes feedback beside it. */
+body.app-shell[data-active-route="sessions"] .trainer-screen .dashboard-grid {
+  display: grid;
+  width: min(100%, 94rem);
+  grid-template-columns: minmax(19rem, .82fr) minmax(0, 1.18fr);
+  grid-template-areas: "sessions feedback";
+  align-items: start;
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+body.app-shell[data-active-route="sessions"] .panel-sessions { grid-area: sessions; }
+body.app-shell[data-active-route="sessions"] .panel-feedback { grid-area: feedback; }
+
+body.app-shell [data-shell-view][hidden] { display: none !important; }
+
+@media (max-width: 1099px) {
+  body.app-shell { grid-template-columns: 64px minmax(0, 1fr); }
+  .app-sidebar { align-items: center; padding-inline: .4rem; }
+  .app-brand { padding-inline: 0; }
+  .app-brand-name, .app-nav-label, .app-sidebar-account { display: none; }
+  .app-nav { width: 100%; }
+  .app-nav-link { justify-content: center; padding-inline: .35rem; }
+  .app-nav-icon { width: 1.25rem; height: 1.25rem; }
+}
+
+@media (max-width: 640px) {
+  body.app-shell { display: block; padding-bottom: 4.5rem; }
+  .app-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: 4.25rem;
+    flex-direction: row;
+    justify-content: center;
+    gap: .5rem;
+    padding: .35rem .5rem;
+    border-right: 0;
+    border-top: 1px solid var(--ui-line);
+  }
+  .app-brand, .app-sidebar-account { display: none; }
+  .app-nav { width: min(100%, 440px); grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: .2rem; }
+  .app-nav-link { min-height: 3.5rem; flex-direction: column; justify-content: center; gap: .15rem; padding: .3rem .15rem; font-size: .68rem; }
+  .app-nav-label { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .app-nav-icon { width: 1.15rem; height: 1.15rem; }
+  body.app-shell .hud-bar { padding: .65rem .8rem; }
+}
+
+@media (max-width: 900px) {
+  body.app-shell[data-active-route="sessions"] .trainer-screen .dashboard-grid { display: block; }
+}

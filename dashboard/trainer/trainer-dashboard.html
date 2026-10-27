@@ -5,11 +5,28 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>CockpitSim — Trainer Dashboard</title>
 	<link rel="stylesheet" href="../shared/css/main.css">
+	<link rel="stylesheet" href="../shared/css/theme.css">
+	<link rel="stylesheet" href="../shared/css/dashboard-shell.css">
 	<link rel="stylesheet" href="../shared/css/logout-modal.css">
 	<link rel="stylesheet" href="trainer-dashboard.css">
 	<link rel="stylesheet" href="trainee-modal.css">
 </head>
-<body>
+	<body class="app-shell" data-default-route="overview">
+		<aside class="app-sidebar" aria-label="Trainer navigation">
+			<a class="app-brand" href="#overview" aria-label="CockpitSim home">
+				<span class="app-brand-mark" aria-hidden="true">C</span>
+				<span class="app-brand-name">CockpitSim</span>
+			</a>
+			<nav class="app-nav" aria-label="Dashboard sections">
+				<a class="app-nav-link" href="#overview" title="Overview" aria-label="Overview"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h7V4H3zm11 8h7v-8h-7zm0-16v4h7V4zM3 20h7v-4H3z"/></svg><span class="app-nav-label">Overview</span></a>
+				<a class="app-nav-link" href="#live-monitor" title="Live monitor" aria-label="Live monitor"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg><span class="app-nav-label">Live monitor</span></a>
+				<a class="app-nav-link" href="#sessions" title="Review sessions" aria-label="Review sessions"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 12h5M8 15h6"/></svg><span class="app-nav-label">Review sessions</span></a>
+				<a class="app-nav-link" href="#settings" title="Settings and grading guide" aria-label="Settings and grading guide"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 0 1-2 1.2L14 21h-4l-.5-2.6a7 7 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 0 1 5 12a7 7 0 0 1 .1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 0 1 2-1.2L10 3h4l.5 2.6a7 7 0 0 1 2 1.2l2.4 1 2 3.4z"/></svg><span class="app-nav-label">Settings &amp; grading</span></a>
+			</nav>
+			<div class="app-sidebar-account" data-shell-account></div>
+		</aside>
+		<div class="app-main">
+		<h1 class="app-page-title visually-hidden">Trainer dashboard</h1>
 	<div class="trainer-screen scanlines">
 		<header class="hud-bar">
 			<div class="hud-item">
@@ -22,13 +39,12 @@
 			</div>
 			<div class="hud-item hud-actions">
 				<button class="hud-btn" id="add-trainee-btn" type="button">+ Add Trainee</button>
-				<button class="logout-btn" id="mute-btn" type="button" title="Toggle audio warnings">Sound: On</button>
 				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
 			</div>
 		</header>
 
 		<main class="dashboard-grid">
-			<section class="panel panel-live" aria-labelledby="live-heading">
+			<section class="panel panel-live" aria-labelledby="live-heading" data-shell-view="live-monitor">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
 				<h2 id="live-heading" class="panel-title">
@@ -63,7 +79,7 @@
 				</article>
 			</section>
 
-			<section class="panel panel-analytics" aria-labelledby="analytics-heading">
+			<section class="panel panel-analytics" aria-labelledby="analytics-heading" data-shell-view="overview">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
 				<h2 id="analytics-heading" class="panel-title">
@@ -83,7 +99,7 @@
 				</div>
 			</section>
 
-			<section class="panel panel-sessions" aria-labelledby="sessions-heading">
+			<section class="panel panel-sessions" aria-labelledby="sessions-heading" data-shell-view="sessions">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
 				<h2 id="sessions-heading" class="panel-title">
@@ -118,7 +134,7 @@
 				</div>
 			</section>
 
-			<section class="panel panel-settings" aria-labelledby="settings-heading">
+			<section class="panel panel-settings" aria-labelledby="settings-heading" data-shell-view="settings">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
 				<h2 id="settings-heading" class="panel-title">
@@ -134,7 +150,7 @@
 				<div id="grading-guidelines"></div>
 			</section>
 
-			<section class="panel panel-feedback" aria-labelledby="feedback-heading">
+			<section class="panel panel-feedback" aria-labelledby="feedback-heading" data-shell-view="sessions">
 				<div class="panel-corner panel-corner-tl"></div>
 				<div class="panel-corner panel-corner-br"></div>
 				<h2 id="feedback-heading" class="panel-title">
@@ -158,6 +174,7 @@
 			</section>
 		</main>
 	</div>
+		</div>
 
 	<!-- SPIKE: Add Trainee modal -->
 	<div class="trainee-modal-overlay" id="trainee-modal-overlay" hidden>
@@ -207,7 +224,7 @@
 	<script src="../shared/js/logout-modal.js"></script>
 	<script src="../shared/js/scenarios.js"></script>
 	<script src="../shared/js/report-renderer.js"></script>
-	<script src="../shared/js/audio-alerts.js"></script>
 	<script src="trainer-dashboard.js"></script>
+	<script type="module" src="../shared/js/dashboard-shell.js"></script>
 </body>
 </html>

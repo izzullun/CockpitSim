@@ -35,7 +35,6 @@ let liveInFlight = false;
 let liveSessionId = null;
 let liveStartedAt = null;
 let liveTimeLimitMinutes = null;
-let liveTimeWarningPlayed = false;
 let TRAINEE_SETTINGS = {}; // traineeId -> sessionDurationMinutes (GET /api/trainees)
 
 function statusLabelFor(sessions) {
@@ -430,10 +429,6 @@ function liveSubmetaText(sessionId) {
 		const rem = Math.max(0, Math.floor(
 			liveTimeLimitMinutes * 60 - (Date.now() - liveStartedAt.getTime()) / 1000));
 		text += ` • Remaining ${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(rem % 60).padStart(2, '0')}`;
-		if (rem <= 60 && rem > 0 && !liveTimeWarningPlayed) {
-			liveTimeWarningPlayed = true;
-			if (typeof audioAlerts !== 'undefined') audioAlerts.warnTimeExpired();
-		}
 	}
 	return text;
 }
@@ -567,7 +562,6 @@ async function pollLiveOnce() {
 		liveSessionId = target.sessionId;
 		liveStartedAt = parseDbDate(target.startedAt);
 		liveTimeLimitMinutes = null;
-		liveTimeWarningPlayed = false;
 		const name = document.getElementById('live-trainee-name');
 		const meta = document.getElementById('live-trainee-meta');
 		const sub = document.getElementById('live-submeta');
@@ -597,8 +591,6 @@ async function pollLiveOnce() {
 		if (res.data.timeLimitMinutes) liveTimeLimitMinutes = res.data.timeLimitMinutes;
 		renderLiveMetrics(res.data);
 		renderLiveWarnings(res.data);
-		// Audio warning on newly out-of-tolerance metrics (edge-triggered).
-		if (typeof audioAlerts !== 'undefined') audioAlerts.update(res.data.metrics);
 		} else if (res.status === 404) {
 			renderLiveEnded(trainee, target);
 			stopLiveTimers();
@@ -1191,19 +1183,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	bindFeedbackButton();
 	bindLogoutButton();
 	bindTraineeModal();
-	// Audio alerts: unlock AudioContext on first gesture + mute toggle.
-	if (typeof audioAlerts !== 'undefined') {
-		const muteBtn = document.getElementById('mute-btn');
-		if (muteBtn) {
-			const syncMuteBtn = () => { muteBtn.textContent = audioAlerts.muted ? 'Sound: Off' : 'Sound: On'; };
-			syncMuteBtn();
-			muteBtn.addEventListener('click', () => {
-				audioAlerts.setMuted(!audioAlerts.muted);
-				syncMuteBtn();
-			});
-		}
-		document.addEventListener('click', () => audioAlerts.unlock(), { once: true });
-	}
 	window.addEventListener('beforeunload', stopLiveTimers);
 });
 }
