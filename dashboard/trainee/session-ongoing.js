@@ -1,3 +1,5 @@
+import { livePresentation } from './trainee-view-model.js';
+
 // CockpitSim — Trainee Session Ongoing (simplified live view).
 // Polls GET /api/me/sessions/{id}/live every pollMs for the scenario and
 // redirects to the report once the session completes (report 200 = graded,
@@ -35,6 +37,8 @@ function renderRemaining() {
   row.hidden = false;
   dd.textContent = `${String(Math.floor(rem / 60)).padStart(2, "0")}:${String(rem % 60).padStart(2, "0")}`;
   dd.classList.toggle("remaining-low", rem <= 60);
+  const progress = document.getElementById('time-progress');
+  if (progress) progress.style.width = `${Math.max(0, Math.min(100, rem / (timeLimitMinutes * 60) * 100))}%`;
 }
 
 function renderObjectives(scenarioKey) {
@@ -57,7 +61,7 @@ function renderObjectives(scenarioKey) {
 function setState(text, ok) {
   const pill = document.getElementById("ongoing-state");
   pill.textContent = text;
-  pill.className = `summary-pill${ok ? " success" : ""}`;
+  pill.className = `live-state${ok ? " success" : ""}`;
 }
 
 function renderFlags(report) {
@@ -74,54 +78,21 @@ function renderFlags(report) {
   });
 }
 
-function bridgeCommand() {
-  return `dotnet run --project telemetry/CockpitSim.Telemetry -- --mock --session ${sessionId} --rate 10`;
-}
-
 function renderLive(report) {
-  document.getElementById("hud-status").textContent = "LIVE";
-  document.getElementById("ongoing-exercise").textContent = report.scenario || "—";
+  document.getElementById("hud-status").textContent = "Live";
+  document.getElementById("ongoing-exercise").textContent = scenarioDef(report.scenario)?.title || report.scenario || "Flight";
   document.getElementById("ongoing-session").textContent = report.sessionId || "—";
   document.getElementById("elapsed-time").textContent = elapsedText();
 
-  const warnings = report.warnings || [];
-  const noBackend = warnings.some((w) => w.includes("not configured"));
-  const noData = warnings.some((w) => w.includes("last 30s"));
-  const simulated = warnings.some((w) => w.includes("Simulated feed"));
-
-  const graded = (report.metrics || []).filter((m) => m.withinTol !== null && m.withinTol !== undefined);
-  const breaches = graded.filter((m) => m.withinTol === false).length;
-  const waiting = noBackend || noData || graded.length === 0;
-
-  // Three visibly different states so there is no guessing: setup needed
-  // (backend has no token) vs bridge not running (no points) vs live feed.
-  const tolEl = document.getElementById("tol-status");
-  const cmdWrap = document.getElementById("bridge-cmd-wrap");
-  if (noBackend) {
-    tolEl.textContent = "Setup needed — backend has no telemetry token.";
-    document.getElementById("ongoing-hint").textContent =
-      "Add INFLUX_TOKEN to the backend and restart it; live values appear here once data flows.";
-    cmdWrap.hidden = true;
-    setState("SETUP", false);
-  } else if (noData || graded.length === 0) {
-    tolEl.textContent = "Bridge not running — no points in the last 30s.";
-    document.getElementById("ongoing-hint").textContent =
-      simulated || !noData
-        ? "Waiting for telemetry…"
-        : "Start the bridge below (same session id), then fly or let the mock run.";
-    document.getElementById("bridge-cmd").textContent = bridgeCommand();
-    cmdWrap.hidden = false;
-    setState("CONNECTING", false);
-  } else {
-    tolEl.textContent = breaches === 0 ? "All within tolerance" : `${breaches} metric${breaches > 1 ? "s" : ""} to check`;
-    document.getElementById("ongoing-hint").textContent = simulated
-      ? "Receiving simulated feed (mock) — not live MSFS 2020 data."
-      : "Receiving live telemetry.";
-    cmdWrap.hidden = true;
-    setState(breaches === 0 ? "ON TRACK" : "CHECK", breaches === 0);
-  }
-
-  document.getElementById("warning-count").textContent = String(warnings.length);
+  const view = livePresentation(report);
+  document.getElementById("tol-status").textContent = view.message;
+  document.getElementById("ongoing-hint").textContent = view.state === 'waiting'
+    ? 'Your flight continues while the simulator connects.'
+    : view.state === 'on-track' ? 'Keep this steady control through the flight.'
+    : 'Make a small correction and check the live indicators.';
+  document.getElementById("warning-count").textContent = String((report.warnings || []).length);
+  if (view.state === 'waiting' && report.warnings?.length) console.info('[live] simulator status', report.warnings);
+  setState(view.state === 'waiting' ? 'Waiting' : view.state === 'on-track' ? 'On track' : 'Check', view.state === 'on-track');
   if (report.timeLimitMinutes && !timeLimitMinutes) {
     timeLimitMinutes = report.timeLimitMinutes;
   }
@@ -134,7 +105,7 @@ async function pollOnce() {
   const res = await apiRequest(`/me/sessions/${sessionId}/live`, { auth: true });
   if (!res.ok || !res.data) {
     document.getElementById("ongoing-hint").textContent =
-      "Lost contact with the session. Check the backend, then reload this page.";
+      "Connection paused. Keep flying; this screen will try again shortly.";
     return;
   }
   if (res.data.status === "completed" || res.data.status === "cancelled") {
@@ -150,8 +121,8 @@ async function pollOnce() {
 
 async function handleFinished() {
   if (redirected) return;
-  document.getElementById("hud-status").textContent = "COMPLETE";
-  setState("DONE", true);
+  document.getElementById("hud-status").textContent = "Complete";
+  setState("Flight ended", true);
   document.getElementById("ongoing-hint").textContent = "Session ended — finalizing your report…";
   const res = await apiRequest(`/me/sessions/${sessionId}/report`, { auth: true });
   if (res.ok && res.data) {
@@ -193,11 +164,11 @@ function listenForSimulatorEvents() {
     const hint = document.getElementById("ongoing-hint");
 
     if (msg.event === "simulatorStarted") {
-      hint.textContent = "Simulator launched — fly in MSFS, then press END SESSION when done.";
+      hint.textContent = "Simulator launched. Your flight is ready.";
     } else if (msg.event === "simulatorLaunchFailed") {
       // Non-fatal: a manually-opened sim still feeds telemetry.
-      hint.textContent = (msg.detail || "Could not launch MSFS via Steam.") +
-        " Start it manually, then fly.";
+      console.warn('[live] simulator launch failed', msg.detail);
+      hint.textContent = "The simulator did not open automatically. You can open it manually and continue.";
     } else if (msg.event === "simulatorClosed") {
       // Auto-end the session so the report is generated. endSession() no-ops
       // when the user already ended (ending/redirected guards) or no session.
@@ -221,7 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const def = (typeof scenarioDef === "function" && scenarioDef("hover")) || null;
   const interval = (def && def.pollMs) || 1000;
-  document.getElementById("btn-end-session").addEventListener("click", endSession);
+  const confirm = document.getElementById('end-confirm');
+  document.getElementById("btn-end-session").addEventListener("click", () => confirm.showModal());
+  document.getElementById('cancel-end').addEventListener('click', () => confirm.close());
+  document.getElementById('confirm-end').addEventListener('click', () => { confirm.close(); endSession(); });
   listenForSimulatorEvents();
   pollOnce();
   pollTimer = setInterval(pollOnce, interval);
