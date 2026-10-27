@@ -1,3 +1,5 @@
+import { dateFromApi } from './trainee-view-model.js';
+
 // Stored report presentation. This module never calculates a score or risk.
 export function resultView(report) {
   const score = typeof report?.score === 'number' ? report.score : null;
@@ -21,19 +23,19 @@ export function resultView(report) {
 
 function flightMinutes(report) {
   if (!report?.startedAt || !report?.endedAt) return null;
-  const from = new Date(report.startedAt).getTime();
-  const to = new Date(report.endedAt).getTime();
+  const from = dateFromApi(report.startedAt)?.getTime() ?? NaN;
+  const to = dateFromApi(report.endedAt)?.getTime() ?? NaN;
   return Number.isFinite(from) && Number.isFinite(to) ? Math.max(0, Math.round((to - from) / 60000)) : null;
 }
 
 export function previousSession(sessions, currentReport) {
-  const currentAt = new Date(currentReport.startedAt).getTime();
+  const currentAt = dateFromApi(currentReport.startedAt)?.getTime() ?? NaN;
   return [...sessions]
     .filter((item) => item.sessionId !== currentReport.sessionId
       && item.scenario === currentReport.scenario
       && item.status === 'completed'
-      && new Date(item.startedAt).getTime() < currentAt)
-    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
+      && (dateFromApi(item.startedAt)?.getTime() ?? NaN) < currentAt)
+    .sort((a, b) => dateFromApi(b.startedAt) - dateFromApi(a.startedAt))[0] || null;
 }
 
 export function metricInsights(_scenario, metrics) {

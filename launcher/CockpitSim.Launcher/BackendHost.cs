@@ -36,10 +36,11 @@ public sealed class BackendHost : IDisposable
         Action<string>? report = null,
         CancellationToken cancellationToken = default)
     {
+        // The bridge also inherits our environment when the backend was
+        // already running. Prepare it before the healthy-backend early return.
+        CockpitSim.Telemetry.DotEnv.Load();
         if (await IsBackendHealthyAsync(cancellationToken)) return true;
         if (!_config.AutoStartBackend || _disposed) return false;
-
-        LoadTokenFromEnvFile();
 
         var exe = ResolveBackendExe();
         if (exe == null)
@@ -139,49 +140,6 @@ public sealed class BackendHost : IDisposable
         catch
         {
             return false;
-        }
-    }
-
-    // Same one-line shape as packaging/.env.example: INFLUX_TOKEN=<token>.
-    // Real environment wins; the file only fills gaps. Never committed.
-    private void LoadTokenFromEnvFile()
-    {
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("INFLUX_TOKEN")))
-            return;
-
-        var baseDir = AppContext.BaseDirectory;
-        var candidates = new[]
-        {
-            Path.GetFullPath(Path.Combine(baseDir, "..", ".env")),
-            Path.Combine(baseDir, ".env"),
-        };
-        foreach (var path in candidates)
-        {
-            string[] lines;
-            try
-            {
-                if (!File.Exists(path)) continue;
-                lines = File.ReadAllLines(path);
-            }
-            catch
-            {
-                continue;
-            }
-            foreach (var raw in lines)
-            {
-                var line = raw.Trim();
-                if (line.Length == 0 || line.StartsWith('#')) continue;
-                var eq = line.IndexOf('=');
-                if (eq <= 0) continue;
-                if (!line[..eq].Trim().Equals("INFLUX_TOKEN", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                var value = line[(eq + 1)..].Trim().Trim('"');
-                if (value.Length > 0)
-                {
-                    Environment.SetEnvironmentVariable("INFLUX_TOKEN", value);
-                    return;
-                }
-            }
         }
     }
 

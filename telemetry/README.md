@@ -24,6 +24,11 @@ day. Pass `--session <id>` for a single-shot run instead.
 
 Token resolution (first hit wins): `INFLUX_TOKEN` env, then `.env` next to the
 repo root or `CockpitSimApp/.env` (both gitignored — never commit them).
+The backend, launcher, and bridge share this loader. Development runs from
+`backend/CockpitSim/` also find the repo-root file; published programs find
+the bundle-root file. The launcher loads it even when the backend is already
+running. Restart an existing backend after changing its token: environment
+changes do not update a running process.
 Without any of those the bridge exits with a clear error instead of failing
 mid-run.
 ```powershell

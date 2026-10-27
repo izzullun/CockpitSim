@@ -14,6 +14,17 @@ function parseDbDate(value) {
   return new Date(hasOffset ? value : `${value}Z`);
 }
 
+// Session tables show an absolute local date/time, including the year so
+// older sessions remain unambiguous. UTC normalization happens before display.
+function formatSessionDateTime(value) {
+  const date = parseDbDate(value);
+  if (!date || !Number.isFinite(date.getTime())) return '—';
+  return date.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+}
+
 async function apiRequest(path, { method = 'GET', body = null, auth = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 

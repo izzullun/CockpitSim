@@ -811,9 +811,9 @@ function renderSessions() {
 		row.children[0].textContent = item.traineeFullName;
 		row.children[1].textContent = item.scenario;
 		const time = row.querySelector('time');
-		time.textContent = relativeTime(item.startedAt);
+		time.textContent = formatSessionDateTime(item.startedAt);
 		try { time.dateTime = parseDbDate(item.startedAt).toISOString(); } catch { /* keep text only */ }
-		time.title = parseDbDate(item.startedAt).toLocaleString('en-GB');
+		time.title = formatSessionDateTime(item.startedAt);
 		row.children[3].textContent = formatDurationMins(item.startedAt, item.endedAt);
 		row.querySelector('.trainee-pill').textContent = stateLabelFor(item.status);
 		const open = document.createElement('button');
