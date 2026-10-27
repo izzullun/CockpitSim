@@ -1,7 +1,7 @@
 // Presentation-only mappings of API data. Grading remains server-owned.
-function dateFromApi(value) {
+export function dateFromApi(value) {
   if (!value) return null;
-  const normalized = /(?:Z|[+-]\d\d:\d\d)$/i.test(value) ? value : `${value}Z`;
+  const normalized = /(?:Z|[+-]\d\d:?\d\d)$/i.test(value) ? value : `${value}Z`;
   const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? null : date;
 }

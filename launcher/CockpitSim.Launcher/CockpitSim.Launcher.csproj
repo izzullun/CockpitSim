@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../telemetry/CockpitSim.Telemetry/DotEnv.cs" Link="Configuration/DotEnv.cs" />
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -7,6 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using CockpitSim.Data;
 using CockpitSim.Services;
 
+// Load before CreateBuilder captures environment variables. The bridge and
+// launcher use the same loader; explicit process environment always wins.
+CockpitSim.Telemetry.DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================================================

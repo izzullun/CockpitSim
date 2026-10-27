@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../telemetry/CockpitSim.Telemetry/DotEnv.cs" Link="Configuration/DotEnv.cs" />
     <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 

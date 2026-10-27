@@ -2,11 +2,40 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resultView, previousSession, metricInsights, breakdownRows } from '../report-view-model.js';
 
+// Exercise the WebView's Malaysian timezone; all-Z fixtures hide mixed-kind bugs.
+process.env.TZ = 'Asia/Kuala_Lumpur';
+
 const base = {
   sessionId: 'current', scenario: 'hover', status: 'completed',
   startedAt: '2026-10-20T10:00:00Z', endedAt: '2026-10-20T10:20:00Z',
   passThreshold: 70, score: null, metrics: [], warnings: [], timeline: [], notes: [],
 };
+
+test('flight time treats suffixless database timestamps as UTC', () => {
+  assert.equal(resultView({ ...base,
+    startedAt: '2026-10-27T12:00:00', endedAt: '2026-10-27T12:04:00Z',
+  }).flightMinutes, 4);
+});
+
+test('flight time preserves explicit timezone offsets', () => {
+  assert.equal(resultView({ ...base,
+    startedAt: '2026-10-27T20:00:00+08:00', endedAt: '2026-10-27T12:04:00Z',
+  }).flightMinutes, 4);
+});
+
+test('missing or invalid flight timestamps do not invent a duration', () => {
+  assert.equal(resultView({ ...base, endedAt: null }).flightMinutes, null);
+  assert.equal(resultView({ ...base, startedAt: 'invalid' }).flightMinutes, null);
+});
+
+test('previous flight comparison orders mixed UTC timestamp formats correctly', () => {
+  const current = { ...base, startedAt: '2026-10-27T12:04:00' };
+  const sessions = [
+    { ...base, sessionId: 'previous', startedAt: '2026-10-27T12:03:00Z' },
+    { ...base, sessionId: 'future', startedAt: '2026-10-27T12:05:00Z' },
+  ];
+  assert.equal(previousSession(sessions, current)?.sessionId, 'previous');
+});
 
 test('a missing score stays pending instead of showing a perfect completion', () => {
   assert.equal(resultView(base).state, 'pending');
