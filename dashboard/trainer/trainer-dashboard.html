@@ -11,8 +11,9 @@
 	<link rel="stylesheet" href="trainer-dashboard.css">
 	<link rel="stylesheet" href="trainee-modal.css">
 	<link rel="stylesheet" href="trainer-review.css">
+	<link rel="stylesheet" href="trainer-workspace.css">
 </head>
-	<body class="app-shell" data-default-route="overview">
+	<body class="app-shell trainer-app" data-default-route="overview">
 		<aside class="app-sidebar" aria-label="Trainer navigation">
 			<a class="app-brand" href="#overview" aria-label="CockpitSim home">
 				<span class="app-brand-mark" aria-hidden="true">C</span>
@@ -22,17 +23,16 @@
 				<a class="app-nav-link" href="#overview" title="Overview" aria-label="Overview"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h7V4H3zm11 8h7v-8h-7zm0-16v4h7V4zM3 20h7v-4H3z"/></svg><span class="app-nav-label">Overview</span></a>
 				<a class="app-nav-link" href="#live-monitor" title="Live monitor" aria-label="Live monitor"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg><span class="app-nav-label">Live monitor</span></a>
 				<a class="app-nav-link" href="#sessions" title="Review sessions" aria-label="Review sessions"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 12h5M8 15h6"/></svg><span class="app-nav-label">Review sessions</span></a>
-				<a class="app-nav-link" href="#settings" title="Settings and grading guide" aria-label="Settings and grading guide"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 0 1-2 1.2L14 21h-4l-.5-2.6a7 7 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 0 1 5 12a7 7 0 0 1 .1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 0 1 2-1.2L10 3h4l.5 2.6a7 7 0 0 1 2 1.2l2.4 1 2 3.4z"/></svg><span class="app-nav-label">Settings &amp; grading</span></a>
+				<a class="app-nav-link" href="#settings" title="Settings and grading guide" aria-label="Settings and grading guide"><svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 0 1-2 1.2L14 21h-4l-.5-2.6a7 7 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 0 1 5 12a7 7 0 0 1 .1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 0 1 2-1.2L10 3h4l.5 2.6a7 7 0 0 1 2 1.2l2.4 1 2 3.4z"/></svg><span class="app-nav-label">Settings</span></a>
 			</nav>
 			<div class="app-sidebar-account" data-shell-account></div>
 		</aside>
 		<div class="app-main">
-		<h1 class="app-page-title visually-hidden">Trainer dashboard</h1>
-	<div class="trainer-screen scanlines">
+	<div class="trainer-screen">
 		<header class="hud-bar">
 			<div class="hud-item">
 				<span class="hud-label">CALLSIGN</span>
-				<span class="hud-value" id="hud-username">TRAINER_LIM</span>
+				<span class="hud-value" id="hud-username">—</span>
 			</div>
 			<div class="hud-item hud-center">
 				<span class="hud-label">STATUS</span>
@@ -43,9 +43,13 @@
 				<button class="logout-btn" id="logout-btn" type="button">Logout</button>
 			</div>
 		</header>
+		<div class="trainer-context">
+			<div class="workspace-heading"><h1 class="app-page-title">Overview</h1><p id="workspace-description">Your assigned trainees and the work that needs attention.</p></div>
+			<div class="trainee-context-control"><label for="live-trainee-select">Selected trainee</label><select id="live-trainee-select" class="live-select"><option value="">Loading trainees…</option></select><span id="selected-trainee-status" aria-live="polite">Loading roster…</span></div>
+		</div>
+		<div class="workspace-message" id="workspace-message" role="status" hidden></div>
 		<div class="review-toolbar" data-shell-view="sessions" role="group" aria-label="Review session view">
-			<div><strong>Review sessions</strong><span>Choose a flight, then review its report and feedback.</span></div>
-			<div class="review-tabs"><button type="button" class="is-active" data-review-pane="queue">Sessions</button><button type="button" data-review-pane="detail">Report &amp; feedback</button></div>
+			<div class="review-tabs"><button type="button" class="is-active" data-review-pane="queue">Choose session</button><button type="button" data-review-pane="detail">Report &amp; feedback</button></div>
 		</div>
 
 		<main class="dashboard-grid">
@@ -56,32 +60,26 @@
 					<svg class="panel-title-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
 						<path d="M2 12h4l3-8 4 16 3-8h6"></path>
 					</svg>
-					<span>01 // REAL-TIME TRACKING</span>
+					<span>Session watch</span>
 				</h2>
 				<div class="live-controls">
-					<label class="live-select-label" for="live-trainee-select">Trainee</label>
-					<div class="live-select-wrap">
-						<select id="live-trainee-select" class="live-select" aria-label="Select trainee to track live">
-							<option value="">Loading trainees…</option>
-						</select>
-						<svg class="live-select-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-							<path d="M6 9l6 6 6-6"></path>
-						</svg>
-					</div>
 					<span class="live-state" id="live-state">STANDBY</span>
+					<button class="secondary-action" id="refresh-live-btn" type="button">Refresh session</button>
+					<a class="text-action" href="#settings">Session settings</a>
 				</div>
 				<article class="live-monitor" aria-labelledby="live-monitor-heading">
 					<h3 id="live-monitor-heading" class="live-monitor-title">Selected trainee</h3>
 					<div class="live-monitor-name" id="live-trainee-name">—</div>
 					<div class="live-monitor-meta" id="live-trainee-meta">—</div>
 					<div class="live-submeta" id="live-submeta">—</div>
-					<div class="live-ended" id="live-ended" hidden>Session ended — showing last data. Pick another trainee above.</div>
+					<div class="live-ended" id="live-ended" hidden>No active session. Review past sessions for saved reports.</div>
 					<dl class="live-stats" id="live-stats"></dl>
 					<div class="warnings-box">
 						<div class="warnings-title">Warnings</div>
 						<ul id="live-warnings" class="warnings-list"></ul>
 					</div>
 				</article>
+				<div class="live-footer"><p>Values are compared with the target and tolerance for this exercise.</p><a class="text-action" href="#sessions">Review past sessions →</a></div>
 			</section>
 
 			<section class="panel panel-analytics" aria-labelledby="analytics-heading" data-shell-view="overview">
@@ -95,13 +93,15 @@
 						<rect x="12" y="9" width="3" height="10"></rect>
 						<rect x="17" y="6" width="3" height="13"></rect>
 					</svg>
-					<span>02 // PERFORMANCE ANALYTICS</span>
+					<span>Training overview</span>
 				</h2>
 				<div id="analytics-cards" class="analytics-cards"></div>
-				<div class="mini-chart" aria-label="Sessions per week, last 6 weeks">
+				<div class="mini-chart" hidden aria-label="Sessions per week, last 6 weeks">
 					<div class="mini-chart-label">Sessions / week (last 6 weeks)</div>
 					<div id="trend-bars" class="trend-bars"></div>
 				</div>
+				<div class="section-heading"><div><h3>Assigned trainees</h3><p>All trainees assigned to you. Choose someone to monitor or review.</p></div><button type="button" id="refresh-roster-btn" class="secondary-action">Refresh</button></div>
+				<div id="trainer-roster" class="trainer-roster" aria-live="polite"><p>Loading trainees…</p></div>
 			</section>
 
 			<section class="panel panel-sessions" aria-labelledby="sessions-heading" data-shell-view="sessions">
@@ -112,7 +112,7 @@
 						<rect x="4" y="5" width="16" height="14" rx="2"></rect>
 						<path d="M8 9h8M8 12h5M8 15h6"></path>
 					</svg>
-					<span>Sessions</span>
+					<span>Session history</span>
 
 				</h2>
 				<div class="session-filters" role="group" aria-label="Filter sessions">
@@ -131,12 +131,13 @@
 							<th scope="col">Date</th>
 							<th scope="col">Duration</th>
 							<th scope="col">State</th>
-							<th scope="col">Focus</th>
+							<th scope="col">Review</th>
 						</tr>
 					</thead>
 					<tbody id="session-body"></tbody>
 				</table>
 				</div>
+				<button type="button" id="more-sessions-btn" class="secondary-action" hidden>Show more sessions</button>
 			</section>
 
 			<section class="panel panel-settings" aria-labelledby="settings-heading" data-shell-view="settings">
@@ -147,12 +148,10 @@
 						<circle cx="12" cy="12" r="3"></circle>
 						<path d="M19 12a7 7 0 0 1-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 0 1-2 1.2L14 21h-4l-.5-2.6a7 7 0 0 1-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 0 1 5 12a7 7 0 0 1 .1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 0 1 2-1.2L10 3h4l.5 2.6a7 7 0 0 1 2 1.2l2.4-1 2 3.4-2 1.6c.06.4.1.8.1 1.2z"></path>
 					</svg>
-					<span>05 // SESSION SETTINGS & GRADING GUIDE</span>
+					<span>Session settings</span>
 				</h2>
-				<div class="panel-subtitle">Session time limit per trainee</div>
-				<div id="trainee-settings" class="trainee-settings"></div>
-				<div class="panel-subtitle">Grading guidelines</div>
-				<div id="grading-guidelines"></div>
+				<div class="settings-section"><div><h3>Session duration</h3><p>Time limit for the selected trainee’s next session. Changes save automatically.</p><p class="settings-hint">Choose 5–60 minutes in 5-minute steps. Sessions end automatically at the configured limit.</p></div><div id="trainee-settings" class="trainee-settings"><p>Loading settings…</p></div></div>
+				<div class="settings-section"><div><h3>Hover grading guide</h3><p>Reference for the current hover exercise. These rules are read-only.</p><p class="settings-hint">A session’s saved report contains its score and individual metric contributions.</p></div><div id="grading-guidelines"></div></div>
 			</section>
 
 			<section class="panel panel-feedback" aria-labelledby="feedback-heading" data-shell-view="sessions">
@@ -167,14 +166,12 @@
 				</h2>
 				<p class="feedback-target" id="feedback-target">Selected trainee: —</p>
 				<div id="session-snapshot" class="session-snapshot" aria-live="polite"></div>
-				<label class="feedback-label" for="feedback-input">Provide feedback</label>
+				<h3 class="feedback-section-title">Trainer notes</h3>
+				<ul id="feedback-stream" class="feedback-stream" aria-live="polite"></ul>
+				<label class="feedback-label" for="feedback-input">Your feedback for this session</label>
 				<textarea id="feedback-input" class="feedback-input" rows="4" placeholder="Select a trainee to attach feedback to their latest session."></textarea>
 				<div class="feedback-controls">
-					<button class="action-btn action-primary" type="button" id="send-feedback-btn">Send feedback</button>
-				</div>
-				<div class="feedback-stream-wrap">
-					<div class="panel-subtitle">Recent comments</div>
-					<ul id="feedback-stream" class="feedback-stream"></ul>
+					<button class="action-btn action-primary" type="button" id="send-feedback-btn">Save feedback</button><span id="feedback-save-status" role="status"></span>
 				</div>
 			</section>
 		</main>
