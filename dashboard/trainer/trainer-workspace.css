@@ -113,6 +113,7 @@ body.trainer-app[data-active-route="sessions"] .trainer-screen .dashboard-grid {
 body.trainer-app[data-active-route="sessions"] .panel-sessions, body.trainer-app[data-active-route="sessions"] .panel-feedback { width: 100%; height: auto; overflow: visible; padding: 28px; background: var(--ui-panel); border: 0; border-radius: 6px; }
 .trainer-app .session-table-wrap { max-height: none; overflow: auto; }
 .trainer-app .session-table { border-collapse: collapse; width: 100%; min-width: 0; }
+body.trainer-app[data-active-route="sessions"] .session-table { min-width: 0; }
 body.trainer-app[data-active-route="sessions"] .session-table th { position: static; color: var(--ui-muted); font: 12px var(--ui-font); text-align: left; background: none; }
 body.trainer-app[data-active-route="sessions"] .session-table th, body.trainer-app[data-active-route="sessions"] .session-table td { padding: 16px 12px; border-bottom: 1px solid var(--ui-line); }
 body.trainer-app[data-active-route="sessions"] .session-table td { font: 14px var(--ui-font); }
@@ -140,6 +141,7 @@ body.trainer-app[data-active-route="sessions"] .snapshot-metrics { grid-template
 .trainer-app .snapshot-warnings { margin: 12px 0 24px; padding-left: 20px; color: var(--ui-muted); line-height: 1.7; }
 .trainer-app .feedback-section-title { margin-bottom: 12px; }
 body.trainer-app .feedback-stream { max-height: none; overflow: visible; list-style: none; display: grid; gap: 12px; padding: 0; margin: 0 0 24px; }
+body.trainer-app[data-active-route="sessions"] .feedback-stream { max-height: none; overflow: visible; }
 .trainer-app .feedback-item { padding: 16px; background: var(--ui-ground); border: 0; border-radius: 4px; }
 .trainer-app .feedback-item-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--ui-muted); font: 12px var(--ui-font); margin-bottom: 8px; }
 .trainer-app .feedback-item-body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }

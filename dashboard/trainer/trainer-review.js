@@ -1,11 +1,15 @@
 // Review sessions keeps the queue and report at full reading width.
+let queueScrollPosition = 0;
 function showReviewPane(pane) {
+  const previous = document.body.dataset.reviewPane;
+  if (previous === 'queue' && pane === 'detail') queueScrollPosition = window.scrollY;
   document.body.dataset.reviewPane = pane;
   document.querySelectorAll('[data-review-pane]').forEach((button) => {
     if (button.tagName !== 'BUTTON') return;
     button.classList.toggle('is-active', button.dataset.reviewPane === pane);
     button.setAttribute('aria-pressed', String(button.dataset.reviewPane === pane));
   });
+  if (previous && previous !== pane) window.scrollTo(0, pane === 'queue' ? queueScrollPosition : 0);
 }
 
 function updateWorkspaceDescription() {

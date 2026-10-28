@@ -36,36 +36,42 @@ Data-terminal direction, seed 381056746, retaining brand palette/type. Keep labe
 **Files:** trainer-dashboard.html, trainer-dashboard.js, trainer-dashboard.css, trainer-review.css.
 **Interfaces:** Existing shared shell hash routing and live-trainee-select; selectedTraineeId remains authoritative.
 
-- [ ] Capture authenticated baseline at desktop and narrow widths.
-- [ ] Build visible route heading, labelled sidebar and persistent trainee context below callsign header.
-- [ ] Render assigned roster with monitor/review actions from actual roster/queue; use compact truthful operational counts.
-- [ ] Scope trainer CSS and remove conflicting fixed-height review layout.
-- [ ] Check JS syntax and browser navigation/selection; commit frame and overview.
+- [x] Capture authenticated baseline at desktop and narrow widths.
+- [x] Build visible route heading, labelled sidebar and persistent trainee context below callsign header.
+- [x] Render assigned roster with monitor/review actions from actual roster/queue; use compact truthful operational counts.
+- [x] Scope trainer CSS and remove conflicting fixed-height review layout.
+- [x] Check JS syntax and browser navigation/selection; commit frame and overview.
 
 ### Task 2: Live and review workspaces
 
 **Files:** trainer-dashboard.html, trainer-dashboard.js, trainer-review.js, trainer-dashboard.css, trainer-review.css.
 **Interfaces:** Existing live DOM IDs, /sessions/{id}/report and /sessions/{id}/feedback.
 
-- [ ] Recompose live status, timing, metrics and warnings without changing polling/data extraction.
-- [ ] Scope session queue to selected trainee; full-size queue/detail views, explicit back/open actions, selected-session summary.
-- [ ] Show all returned warnings and notes for the selected session; keep score breakdown readable.
-- [ ] Preserve feedback drafts per session; prevent duplicate submits, stale responses and misleading save states.
-- [ ] Verify session switching, feedback target, loading/empty/error, JS syntax; commit review workflow.
+- [x] Recompose live status, timing, metrics and warnings without changing polling/data extraction.
+- [x] Scope session queue to selected trainee; full-size queue/detail views, explicit back/open actions, selected-session summary.
+- [x] Show all returned warnings and notes for the selected session; keep score breakdown readable.
+- [x] Preserve feedback drafts per session; prevent duplicate submits, stale responses and misleading save states.
+- [x] Verify session switching, feedback target, loading/empty/error, JS syntax; commit review workflow.
 
 ### Task 3: Settings and final verification
 
 **Files:** trainer-dashboard.html, trainer-dashboard.js, trainer-dashboard.css, trainer-review.css; verification report in docs/superpowers.
 **Interfaces:** Existing /trainees and PUT /trainees/{id}/session-duration; current scenario definitions.
 
-- [ ] Present selected trainee duration with autosave explanation, 5–60 min in 5-minute steps; restore value on failure.
-- [ ] Display current hover guidance with explicit read-only scope and no grading modifications.
-- [ ] Check node --check on each changed JS; run existing frontend Node tests.
-- [ ] Inspect all routes at 1440, 768, 390; inspect screenshots and correct visible issues; verify cache headers.
-- [ ] Fresh whole-change review, address important findings; focused final commit and report files/checks/limitations/manual tests.
+- [x] Present selected trainee duration with autosave explanation, 5–60 min in 5-minute steps; restore value on failure.
+- [x] Display current hover guidance with explicit read-only scope and no grading modifications.
+- [x] Check node --check on each changed JS; run existing frontend Node tests.
+- [x] Inspect all routes at 1440, 768, 390; inspect screenshots and correct visible issues; verify cache headers.
+- [x] Fresh whole-change review, address important findings; focused final commit and report files/checks/limitations/manual tests.
 
 ## Progress / rulings
 
 - Pre-flight: tasks share existing selection, queue and DOM IDs; keep these interfaces throughout.
 - Ruling: implement in the requested checkout on a feature branch, following the approved in-place approach. Cost: preview reflects branch edits until switched back.
 - Ruling: use browser behavior checks for UI layout; add automated tests only for meaningful selection/feedback failures. Low-impact CSS changes do not need implementation-mirroring tests.
+- Ruling: use a new trainer-workspace.css loaded after the legacy trainer styles rather than changing shared styles. Cost: future edits must account for the existing cascade; route-specific overrides are covered by browser geometry checks.
+- Ruling: retain CockpitSim's existing dark brand palette and labelled sidebar instead of the dealt icon rail. Cost: less horizontal space at tablet width; session tables become readable cards there.
+- Ruling: fix two pre-existing UI response races found during final review (late live rendering and pre-save notes responses). Scope is client selection/cache state only; endpoints, polling rates and backend extraction are unchanged. Cost if wrong: extra client reads on a selection/save; delayed-response browser tests now cover both.
+- Task 1 and 2 complete in 9b4ded4; task 3 hardening and final verification recorded in the following commit.
+- Final review: fresh read-only reviewer found duration-save A→B→A state loss and mobile 670px table specificity; both reproduced/verified and fixed. Notes scroller minor also fixed; no deferred minors.
+- Final verification details: ../verification/2026-10-28-trainer-phase3.md.

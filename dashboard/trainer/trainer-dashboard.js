@@ -25,10 +25,12 @@ let ALL_TRAINEES = [];     // GET /api/trainees — full assigned roster incl. s
 let selectedTraineeId = null;
 let selectedSessionId = null; // specific session shown in the feedback snapshot
 const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note, sessionId?}]
+const notesCacheVersions = new Map();
 let COVERAGE = null;       // GET /api/sessions/feedback-coverage, when available
 let SESSION_FILTER = 'all'; // all | in_progress | completed | scheduled
 let sessionVisibleCount = 30;
 const feedbackDrafts = new Map();
+const durationSaveStates = new Map();
 let feedbackDraftSessionId = null;
 let feedbackSaving = false;
 let notesRequestVersion = 0;
@@ -587,11 +589,10 @@ function renderLiveEnded(trainee, session) {
 	const sub = document.getElementById('live-submeta');
 	if (name) name.textContent = trainee ? trainee.fullName : '—';
 	if (meta) meta.textContent = session ? `${session.scenario || 'session'} • Session ended` : 'Session ended';
-	if (sub) sub.textContent = 'Final data below. Pick another trainee above.';
+	if (sub) sub.textContent = session ? `Last session: ${formatSessionDateTime(session.startedAt)}` : 'No sessions recorded yet.';
 }
 
 async function pollLiveOnce() {
-	if (liveInFlight) return;
 	const trainee = TRAINTEES.find((t) => t.id === selectedTraineeId) || null;
 	const target = liveSessionForSelected();
 	const ended = document.getElementById('live-ended');
@@ -607,11 +608,12 @@ async function pollLiveOnce() {
 			const latest = QUEUE.find((i) => i.traineeId === trainee.id) || null;
 			renderLiveEnded(trainee, latest);
 			renderLiveMetrics({ metrics: [] }, latest?.scenario);
-			renderLiveWarnings({ warnings: ['No live session for this trainee — showing tracked metrics. Start the bridge to stream values.'] });
+			renderLiveWarnings({ warnings: ['No live values available. Exercise reference targets are shown above.'] });
 		}
 		stopLiveTimers();
 		return;
 	}
+	if (liveInFlight) return;
 
 	// New session selected — reset clock anchor.
 	if (liveSessionId !== target.sessionId) {
@@ -630,6 +632,8 @@ async function pollLiveOnce() {
 	liveInFlight = true;
 	try {
 		const res = await apiRequest(`/sessions/${target.sessionId}/live`, { auth: true });
+		// Selection is presentation state: a late response cannot repaint a different trainee.
+		if (selectedTraineeId !== trainee.id || liveSessionForSelected()?.sessionId !== target.sessionId) return;
 		if (res.ok && res.data) {
 			if (res.data.status === 'completed' || res.data.status === 'cancelled') {
 				renderLiveMetrics(res.data);
@@ -655,10 +659,12 @@ async function pollLiveOnce() {
 			setLiveState('RETRY');
 		}
 	} catch (err) {
+		if (selectedTraineeId !== trainee.id || liveSessionForSelected()?.sessionId !== target.sessionId) return;
 		console.error('[trainer] live poll error', err);
 		setLiveState('RETRY');
 	} finally {
 		liveInFlight = false;
+		if (selectedTraineeId !== trainee.id || liveSessionForSelected()?.sessionId !== target.sessionId) pollLiveOnce();
 	}
 }
 
@@ -670,6 +676,15 @@ function stopLiveTimers() {
 function startLiveTracking() {
 	stopLiveTimers();
 	const target = liveSessionForSelected();
+	if (target && liveInFlight && liveSessionId !== target.sessionId) {
+		const trainee = TRAINTEES.find((t) => t.id === selectedTraineeId);
+		document.getElementById('live-trainee-name').textContent = trainee?.fullName || '—';
+		document.getElementById('live-trainee-meta').textContent = `${target.scenario || 'Session'} • Connecting…`;
+		document.getElementById('live-submeta').textContent = '';
+		setLiveState('CONNECTING');
+		renderLiveMetrics({ metrics: [] }, target.scenario);
+		renderLiveWarnings({ warnings: ['Waiting for current session values.'] });
+	}
 	if (!target) {
 		pollLiveOnce();
 		return;
@@ -678,7 +693,7 @@ function startLiveTracking() {
 	liveTimer = setInterval(pollLiveOnce, livePollIntervalMs(target));
 	liveClock = setInterval(() => {
 		const sub = document.getElementById('live-submeta');
-		if (sub && liveSessionId) {
+		if (sub && liveSessionId && liveSessionForSelected()?.sessionId === liveSessionId) {
 			const t = QUEUE.find((i) => i.sessionId === liveSessionId);
 			sub.textContent = liveSubmetaText(liveSessionId);
 		}
@@ -935,9 +950,12 @@ function bindSessionFilters() {
 
 async function ensureNotesLoaded(traineeId) {
 	if (FEEDBACK_CACHE[traineeId]) return;
+	const version = notesCacheVersions.get(traineeId) || 0;
 
 	try {
 	const res = await apiRequest(`/trainees/${traineeId}/notes`, { auth: true });
+	// A successful save invalidates any notes reads that began before it.
+	if (version !== (notesCacheVersions.get(traineeId) || 0)) return ensureNotesLoaded(traineeId);
 	if (!res.ok || !Array.isArray(res.data)) return;
 	FEEDBACK_CACHE[traineeId] = res.data.map((n) => ({
 			author: n.author,
@@ -1062,6 +1080,7 @@ function bindFeedbackButton() {
 		}
 
 		delete FEEDBACK_CACHE[traineeId];
+		notesCacheVersions.set(traineeId, (notesCacheVersions.get(traineeId) || 0) + 1);
 		COVERAGE = null;
 		if (selectedSessionId === target.sessionId) {
 			// Do not discard text added while the request was being saved.
@@ -1106,51 +1125,62 @@ async function loadTraineeSettings() {
 function renderTraineeSettings(trainees) {
 	const host = document.getElementById('trainee-settings');
 	if (!host) return;
-	trainees = trainees.filter((t) => t.traineeId === selectedTraineeId);
-	if (trainees.length === 0) {
-		host.innerHTML = '<p class="feedback-empty">No trainees assigned to you yet.</p>';
+	const trainee = trainees.find((t) => t.traineeId === selectedTraineeId);
+	host.replaceChildren();
+	if (!trainee) {
+		host.textContent = selectedTraineeId ? 'Duration settings unavailable. Refresh on Overview to retry.' : 'No trainees assigned to you yet.';
 		return;
 	}
-	const options = [];
-	for (let m = 5; m <= 60; m += 5) options.push(m);
-	host.innerHTML = trainees.map((t) => `
-		<div class="trainee-setting-row" data-trainee="${t.traineeId}">
-			<span class="trainee-setting-name">${t.fullName} <span class="trainee-setting-user">(${t.username})</span></span>
-			<select class="trainee-duration-select" aria-label="Session duration for ${t.fullName}">
-				${options.map((m) => `<option value="${m}"${(t.sessionDurationMinutes || 25) === m ? ' selected' : ''}>${m} min</option>`).join('')}
-			</select>
-			<span class="trainee-setting-status" aria-live="polite"></span>
-		</div>`).join('');
+	const state = durationSaveStates.get(trainee.traineeId);
+	const row = document.createElement('div');
+	row.className = 'trainee-setting-row';
+	const name = document.createElement('span');
+	name.className = 'trainee-setting-name';
+	name.textContent = trainee.fullName;
+	const username = document.createElement('span');
+	username.className = 'trainee-setting-user';
+	username.textContent = trainee.username;
+	name.appendChild(username);
+	const select = document.createElement('select');
+	select.className = 'trainee-duration-select';
+	select.setAttribute('aria-label', `Session duration for ${trainee.fullName}`);
+	for (let minutes = 5; minutes <= 60; minutes += 5) {
+		const option = document.createElement('option');
+		option.value = minutes;
+		option.textContent = `${minutes} min`;
+		select.appendChild(option);
+	}
+	select.value = state?.pending ? state.minutes : (TRAINEE_SETTINGS[trainee.traineeId] ?? trainee.sessionDurationMinutes ?? 25);
+	select.disabled = Boolean(state?.pending);
+	const status = document.createElement('span');
+	status.className = 'trainee-setting-status';
+	status.setAttribute('aria-live', 'polite');
+	status.textContent = state?.message || '';
+	select.addEventListener('change', () => saveTraineeDuration(trainee.traineeId, Number(select.value)));
+	row.append(name, select, status);
+	host.appendChild(row);
+}
 
-	host.querySelectorAll('.trainee-duration-select').forEach((select) => {
-		select.addEventListener('change', async () => {
-			const row = select.closest('.trainee-setting-row');
-			const status = row.querySelector('.trainee-setting-status');
-			select.disabled = true;
-			status.textContent = 'saving…';
-			const previous = TRAINEE_SETTINGS[row.dataset.trainee] || 25;
-			try {
-			const res = await apiRequest(`/trainees/${row.dataset.trainee}/session-duration`, {
-				method: 'PUT',
-				auth: true,
-				body: { minutes: Number(select.value) },
-			});
-			select.disabled = false;
-			if (res.ok) {
-				TRAINEE_SETTINGS[row.dataset.trainee] = Number(select.value);
-				const trainee = ALL_TRAINEES.find((t) => t.traineeId === row.dataset.trainee);
-				if (trainee) trainee.sessionDurationMinutes = Number(select.value);
-				status.textContent = 'saved';
-			} else {
-				select.value = previous;
-				status.textContent = res.data?.message || 'save failed';
-			}
-			} catch {
-				select.value = previous;
-				status.textContent = 'Could not save. Try again.';
-			} finally { select.disabled = false; }
+async function saveTraineeDuration(traineeId, minutes) {
+	if (durationSaveStates.get(traineeId)?.pending) return;
+	durationSaveStates.set(traineeId, { pending: true, minutes, message: 'Saving…' });
+	renderTraineeSettings(ALL_TRAINEES);
+	let message;
+	try {
+		const res = await apiRequest(`/trainees/${traineeId}/session-duration`, {
+			method: 'PUT', auth: true, body: { minutes },
 		});
-	});
+		if (res.ok) {
+			TRAINEE_SETTINGS[traineeId] = minutes;
+			const trainee = ALL_TRAINEES.find((t) => t.traineeId === traineeId);
+			if (trainee) trainee.sessionDurationMinutes = minutes;
+			message = 'Saved. Applies to the next session.';
+		} else message = res.data?.message || 'Could not save. Previous duration restored.';
+	} catch {
+		message = 'Could not save. Try again.';
+	}
+	durationSaveStates.set(traineeId, { pending: false, message });
+	renderTraineeSettings(ALL_TRAINEES);
 }
 
 // Static grading guideline (trainer-only): mirrors GradingService rules —
@@ -1319,6 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	bindLogoutButton();
 	bindTraineeModal();
 	document.getElementById('refresh-roster-btn').addEventListener('click', () => { loadLiveData(); loadTraineeSettings(); });
+	document.getElementById('refresh-live-btn').addEventListener('click', () => loadLiveData());
 	document.getElementById('more-sessions-btn').addEventListener('click', () => { sessionVisibleCount += 30; renderSessions(); });
 	window.addEventListener('beforeunload', stopLiveTimers);
 });
