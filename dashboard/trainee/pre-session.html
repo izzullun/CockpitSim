@@ -79,7 +79,28 @@
           <button class="btn-start-session" id="btn-start-session" type="button">Start session <span aria-hidden="true">→</span></button>
           <p class="mission-help" id="start-help">Your session starts here. The simulator may open through the launcher.</p>
         </div>
-        <div class="mission-mark" aria-hidden="true"><span class="mission-mark-ring"><span class="mission-mark-cross">+</span></span><span class="mission-mark-caption">Steady hands. Clear horizon.</span></div>
+        <div class="mission-mark" aria-hidden="true">
+          <span class="mission-mark-ring">
+            <svg class="mission-helicopter" viewBox="0 0 240 180" fill="none" focusable="false">
+              <g transform="rotate(-7 120 90)" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Main rotor and mast -->
+                <path d="M62 48h142M133 48v20M119 67h28"/>
+                <!-- Tail boom, fin and tail rotor -->
+                <path d="m108 88-63-9-8-25h-9l4 40 72 12"/>
+                <circle cx="33" cy="80" r="12"/>
+                <path d="m25 72 16 16m0-16L25 88"/>
+                <!-- Cabin and cockpit glazing -->
+                <path class="helicopter-cabin" d="M112 69h29c22 0 41 12 53 29l8 12c3 5-1 10-7 10h-65c-20 0-32-10-32-25 0-11 5-20 14-26Z"/>
+                <path d="M144 72v28h46M162 77l-5 23M119 82v21h15"/>
+                <!-- Landing struts and skids -->
+                <path d="m119 120-5 16m56-16 6 16M97 136h93c6 0 10-3 13-7"/>
+              </g>
+              <!-- Ground reference makes the lifted skids read as a hover. -->
+              <path class="helicopter-ground" d="M95 158h89m-64 8h39" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="mission-mark-caption">Steady hands. Clear horizon.</span>
+        </div>
       </div>
       <div class="mission-lower">
         <section class="mission-metrics" aria-label="How this mission is scored">
