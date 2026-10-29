@@ -597,6 +597,10 @@ async function pollLiveOnce() {
 	const target = liveSessionForSelected();
 	const ended = document.getElementById('live-ended');
 	if (ended) ended.hidden = true;
+	// Returning from an inactive trainee can reuse the same live session ID.
+	// Identity follows the current selection, independently of the clock anchor.
+	const name = document.getElementById('live-trainee-name');
+	if (name && trainee) name.textContent = trainee.fullName;
 
 	if (!trainee || !target) {
 		if (!trainee) {
