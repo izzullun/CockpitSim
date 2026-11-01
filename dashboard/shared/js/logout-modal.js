@@ -19,7 +19,7 @@ function initLogoutConfirm(buttonId = 'logout-btn') {
     overlay.setAttribute('aria-labelledby', 'logout-confirm-title');
     overlay.innerHTML = `
       <div class="logout-modal">
-        <h2 class="logout-modal-title" id="logout-confirm-title">// Confirm Logout</h2>
+        <h2 class="logout-modal-title" id="logout-confirm-title">Confirm Logout</h2>
         <p class="logout-modal-text">Are you sure you want to log out? Any unsaved progress will be lost.</p>
         <div class="logout-modal-actions">
           <button type="button" class="modal-btn" id="logout-cancel-btn">Cancel</button>
