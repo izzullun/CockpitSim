@@ -8,6 +8,7 @@
   display: none;
   align-items: center;
   justify-content: center;
+  padding: var(--space-md);
   background-color: rgba(6, 9, 14, 0.75);
   backdrop-filter: blur(2px);
 }
@@ -18,7 +19,9 @@
 
 .logout-modal {
   position: relative;
-  width: min(380px, calc(100vw - var(--space-xl)));
+  width: min(380px, 100%);
+  max-height: calc(100dvh - 2 * var(--space-md));
+  overflow-y: auto;
   padding: var(--space-lg);
   background-color: var(--bg-panel-raised);
   border: 1px solid var(--border-strong);
@@ -44,30 +47,34 @@
 }
 
 .logout-modal::before {
-  top: -1px;
-  left: -1px;
+  top: 0;
+  left: 0;
   border-width: 2px 0 0 2px;
 }
 
 .logout-modal::after {
-  bottom: -1px;
-  right: -1px;
+  bottom: 0;
+  right: 0;
   border-width: 0 2px 2px 0;
 }
 
 .logout-modal-title {
-  font-size: 13px;
-  letter-spacing: 2px;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-align: center;
   text-transform: uppercase;
   color: var(--accent-cyan);
 }
 
 .logout-modal-text {
   margin-top: var(--space-md);
-  font-family: var(--font-mono);
+  font-family: var(--ui-font, var(--font-mono));
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary);
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .logout-modal-actions {
@@ -78,7 +85,9 @@
 }
 
 .logout-modal .modal-btn {
-  padding: var(--space-sm) var(--space-md);
+  flex: 1;
+  min-height: 40px;
+  padding: 10px var(--space-md);
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 1px;
