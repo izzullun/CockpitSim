@@ -17,6 +17,7 @@ public class SessionDto
     public string Scenario { get; set; } = string.Empty;
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
+    public double? Score { get; set; }
     public string Status { get; set; } = string.Empty;
     public int Attempt { get; set; }
 }
@@ -31,6 +32,7 @@ public class QueueItemDto
     public string Status { get; set; } = string.Empty;
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
+    public double? Score { get; set; }
 }
 
 public class TraineeNoteDto

@@ -70,7 +70,7 @@ input {
 
 /* Scanline texture — used sparingly, only on hero/login-style panels */
 .scanlines {
-  background-image: repeating-linear-gradient(
+  background-image: repeating-linear-gradient( /* taste-skill-ignore: legacy cockpit scanline utility. */
     0deg,
     rgba(255, 255, 255, 0.015),
     rgba(255, 255, 255, 0.015) 1px,

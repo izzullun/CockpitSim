@@ -1,0 +1,129 @@
+.trainer-app .trainer-screen { min-height:0; }
+.trainer-app .trainer-context { padding-block:1.6rem 1.85rem; }
+.trainer-app .workspace-heading p { font-size:1rem; }
+.trainer-app .overview-add { display:none; }
+.trainer-app[data-active-route="overview"] .overview-add { display:block; background:var(--ui-cyan); color:var(--ui-ground); justify-self:start; }
+.trainer-app:not([data-active-route="live-monitor"]) .trainee-context-control { display:none; }
+.trainer-app .trainer-refresh { grid-column:3; }
+.trainer-app .hud-actions { position:absolute; top:.6rem; right:clamp(1rem,4vw,3.5rem); z-index:1; }
+.trainer-app .hud-bar { min-height:0; padding:0; }
+.trainer-app .hud-actions .logout-btn { min-height:32px; }
+.trainer-app .trainer-context .workspace-heading { min-width:0; }
+.trainer-app :is(.panel-analytics,.panel-settings,.panel-sessions,.panel-live) > .panel-title,
+.trainer-app .live-monitor-name, .trainer-app .live-monitor-meta,
+.trainer-app .live-readings .warnings-title { display:none; }
+.trainer-app .panel-analytics, .trainer-app .panel-settings, .trainer-app .panel-sessions { padding:0; background:none; border:0; }
+.trainer-app .analytics-cards { display:flex; flex-wrap:wrap; gap:2.75rem; margin-bottom:2rem; border:0; padding:0; }
+.trainer-app .analytics-cards .metric-card { padding:0; border:0; }
+.trainer-app .metric-label { font-size:.95rem; }
+.overview-panels, .trainer-app .panel-settings { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); gap:1.5rem; }
+.overview-card, .trainer-app .settings-section { background:var(--ui-panel); border-radius:6px; padding:1.75rem; }
+.overview-card h3, .trainer-app .settings-section h3 { font-size:1.55rem; margin-bottom:1rem; }
+.trainer-app .overview-card .roster-row { display:flex; justify-content:space-between; gap:1rem; }
+.overview-card .hover-outline { display:block; width:min(100%,220px); margin:1.5rem auto 2.5rem; }
+.overview-current-row { display:flex; justify-content:space-between; border-bottom:1px solid var(--ui-line); padding:0 0 1rem; margin-bottom:1rem; }
+.overview-current-row span { color:var(--ui-pass); }
+#current-flight-summary a { color:var(--ui-cyan); }
+.trainer-app .live-monitor { grid-template-columns:minmax(13rem,360px) minmax(0,1fr); }
+.trainer-app .live-flight-card { padding:1.75rem; }
+.trainer-app .live-flight-card .hover-outline { width:210px; max-width:100%; margin:0 auto 1.5rem; }
+.trainer-app .live-flight-card .live-state { order:2; background:none; border:0; padding:0; color:var(--ui-pass); }
+.trainer-app .live-flight-card .live-submeta { order:1; }
+.trainer-app .live-stats .stat-item { padding:1.65rem; min-height:9rem; }
+.trainer-app .live-footer { margin-top:.75rem; }
+.trainer-app .settings-section { display:block; border:0; }
+.trainer-app .settings-section .trainee-setting-row { padding:1rem 0; border-bottom:1px solid var(--ui-line); background:none; }
+.trainer-app .settings-section .trainee-setting-user { display:none; }
+.grading-rows > div { display:flex; justify-content:space-between; gap:1rem; padding:.85rem 0; border-bottom:1px solid var(--ui-line); }
+#grading-guidelines p { margin-top:1rem; }
+body.trainer-app[data-active-route="sessions"][data-review-pane="queue"] {
+  display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+}
+body.trainer-app[data-active-route="sessions"][data-review-pane="queue"] .app-main,
+body.trainer-app[data-active-route="sessions"][data-review-pane="queue"] .trainer-screen {
+  display:flex; flex-direction:column; min-height:0; height:auto; flex:1; overflow:hidden;
+}
+body.trainer-app[data-active-route="sessions"][data-review-pane="queue"] .dashboard-grid,
+body.trainer-app[data-active-route="sessions"][data-review-pane="queue"] .panel-sessions {
+  display:flex; flex-direction:column; flex:1; min-height:0;
+}
+body.trainer-app[data-active-route="sessions"] .panel-sessions { background:none; padding:0; }
+.trainer-app .session-filters select { min-height:46px; padding:.65rem .9rem; color:var(--ui-text); background:var(--bg-input); border:1px solid var(--ui-line); border-radius:4px; font:inherit; }
+.trainer-app .session-table-wrap[data-cockpit-outline] {
+  flex:1; min-height:0; overflow:auto; padding-inline:1.25rem;
+  background:var(--ui-panel); border:1px solid var(--cockpit-edge); border-radius:6px;
+  --cockpit-glow: 0 0 16px var(--accent-cyan-glow);
+  scrollbar-gutter:stable; overscroll-behavior:contain;
+}
+body.trainer-app[data-active-route="sessions"] .session-table { display:table; min-width:640px; }
+body.trainer-app[data-active-route="sessions"] .session-table thead { display:table-header-group; }
+body.trainer-app[data-active-route="sessions"] .session-table tbody { display:table-row-group; }
+body.trainer-app[data-active-route="sessions"] .session-table tr { display:table-row; background:transparent; }
+body.trainer-app[data-active-route="sessions"] .session-table :is(td,th) { display:table-cell; text-align:left; }
+body.trainer-app[data-active-route="sessions"] .session-table th { position:sticky; top:0; z-index:1; background:var(--ui-panel); }
+.trainer-app .session-table small { display:block; color:var(--ui-muted); margin-top:.25rem; }
+.trainer-app .session-table .flight-grade { font-size:1.7rem; font-style:italic; }
+.trainer-app .session-table .queue-link { color:var(--ui-cyan); }
+.queue-awaiting { color:var(--ui-warning); }
+.trainer-app .panel-feedback-editor .feedback-input { min-height:6rem; }
+.trainer-app .panel-feedback-editor .feedback-section-title { margin-top:1rem; }
+.trainer-app .report-detail-tabs { display:flex; gap:1rem; flex-wrap:wrap; border-bottom:1px solid var(--ui-line); margin-bottom:1rem; }
+.report-detail-tabs button { background:none; color:var(--ui-muted); border:0; padding:.65rem 0; font:inherit; }
+.report-detail-tabs [aria-pressed="true"] { color:var(--ui-cyan); box-shadow:0 2px var(--ui-cyan); }
+.trainer-app .detail-pages { display:flex; align-items:center; gap:.75rem; margin-top:.8rem; }
+@media (max-width:860px) {
+  .trainer-app .trainer-context { display:flex; flex-wrap:wrap; }
+  .trainer-app .workspace-heading { flex-basis:100%; }
+  .trainer-app .hud-actions { position:static; }
+  .overview-panels, .trainer-app .panel-settings, .trainer-app .live-monitor { grid-template-columns:1fr; }
+}
+.trainer-app[data-review-pane="detail"] .panel-feedback-editor .feedback-input { min-height:6rem; }
+.trainer-app .snapshot-head .flight-grade { font-size:2.5rem; font-style:italic; vertical-align:middle; margin-right:.3rem; }
+.trainer-app .session-snapshot h3 { font-size:1.3rem; margin-bottom:.65rem; }
+.trainer-app .session-snapshot p { margin-bottom:1rem; line-height:1.55; }
+.snapshot-notice { padding:.85rem; background:var(--ui-raised); color:var(--ui-warning); }
+.snapshot-lines { padding-left:1.2rem; }
+.snapshot-lines li { padding:.5rem 0; }
+.detail-pages button { padding:.35rem .65rem; background:var(--ui-raised); color:var(--ui-text); border:1px solid var(--ui-line); border-radius:4px; }
+.detail-pages button:disabled { opacity:.55; }
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .trainer-screen,
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .app-main { min-height:0; }
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback-editor,
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback { align-self:stretch; }
+.trainer-app[data-review-pane="queue"] .review-toolbar { display:none !important; }
+.trainer-app[data-review-pane="detail"] .review-toolbar {
+  position:relative; margin-block:-1rem .75rem;
+}
+.trainer-app[data-review-pane="detail"] .review-toolbar .review-tabs { border:0; }
+.trainer-app[data-review-pane="detail"] .panel-feedback .feedback-target { display:none; }
+.trainer-app .review-tabs button { background:var(--ui-raised); border:1px solid var(--ui-line); padding:.5rem 1rem; border-radius:4px; }
+body.trainer-app[data-active-route="sessions"] .trainer-context .review-toolbar { width:auto; margin:0; padding:0; }
+.trainer-app .settings-section > .settings-hint { margin-top:1.5rem; }
+.trainer-app .overview-card, .trainer-app .settings-section { min-height:min(52vh,30rem); }
+.trainer-app .trainer-context :is(.secondary-action,.overview-add), .trainer-app .overview-card .secondary-action { min-height:50px; padding-inline:1.2rem; font-size:1rem; }
+.trainer-app .overview-card .roster-row span { font-size:1rem; }
+.trainer-app .live-flight-card .live-state.ended { color:var(--ui-muted); }
+.trainer-app .panel-feedback-editor { width:100%; }
+.trainer-app .panel-feedback > .panel-title { display:none; }
+.trainer-app .panel-feedback .snapshot-head { border-bottom:1px solid var(--ui-line); padding-bottom:1rem; }
+.trainer-app .panel-feedback .snapshot-head strong { font:600 1rem var(--ui-font); color:var(--ui-text); }
+.trainer-app .panel-feedback-editor #send-feedback-btn { background:var(--ui-cyan); color:var(--ui-ground); min-height:48px; }
+.trainer-app .panel-feedback-editor .feedback-input { resize:none; }
+.trainer-app:is([data-active-route="overview"], [data-active-route="live-monitor"]) .trainer-refresh {
+  grid-column: 2;
+  grid-row: 1;
+  justify-content: flex-start;
+}
+.trainer-app:is([data-active-route="overview"], [data-active-route="live-monitor"]) .refresh-timestamp {
+  display: none;
+}
+.trainer-app[data-active-route="overview"] .overview-add,
+.trainer-app[data-active-route="live-monitor"] .trainee-context-control {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+@media (max-width: 860px) {
+  .trainer-app:is([data-active-route="overview"], [data-active-route="live-monitor"]) .trainer-refresh { order: 1; }
+  .trainer-app .overview-add, .trainer-app .trainee-context-control { order: 2; margin-inline-start: auto; }
+}

@@ -3,14 +3,10 @@ import { dateFromApi } from './trainee-view-model.js';
 // Stored report presentation. This module never calculates a score or risk.
 export function resultView(report) {
   const score = typeof report?.score === 'number' ? report.score : null;
-  const metrics = Array.isArray(report?.metrics) ? report.metrics : [];
   const warnings = Array.isArray(report?.warnings) ? report.warnings : [];
   const noTelemetry = warnings.some((warning) => /no telemetry was captured/i.test(warning));
   if (noTelemetry) return { state: 'no-data', score: null, stars: 0, flightMinutes: flightMinutes(report) };
   if (score === null) return { state: 'pending', score: null, stars: 0, flightMinutes: flightMinutes(report) };
-  if (!metrics.some((metric) => metric.actual !== null && metric.actual !== undefined)) {
-    return { state: 'no-data', score: null, stars: 0, flightMinutes: flightMinutes(report) };
-  }
   const threshold = typeof report.passThreshold === 'number' ? report.passThreshold : 70;
   return {
     state: score >= threshold ? 'complete' : 'needs-work',
@@ -53,4 +49,12 @@ export function breakdownRows(metrics) {
       within: typeof metric.withinPct === 'number' ? `${metric.withinPct.toFixed(1)}%` : '—',
       contribution: typeof metric.contribution === 'number' ? metric.contribution.toFixed(1) : '—',
     }));
+}
+
+export function flightDuration(report) {
+  const start = dateFromApi(report.startedAt);
+  const end = dateFromApi(report.endedAt);
+  if (!start || !end || end < start) return null;
+  const seconds = Math.floor((end - start) / 1000);
+  return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 }

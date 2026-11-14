@@ -4,29 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CockpitSim - Session Ongoing</title>
+  <link rel="icon" type="image/svg+xml" href="../shared/img/sightline-favicon.svg">
   <link rel="stylesheet" href="../shared/css/main.css">
   <link rel="stylesheet" href="../shared/css/theme.css">
-  <link rel="stylesheet" href="../shared/css/logout-modal.css">
   <link rel="stylesheet" href="ongoing-v2.css">
+  <link rel="stylesheet" href="../shared/css/cockpit-outline.css">
 </head>
 <body class="trainee-live">
   <div class="ongoing-screen">
     <header class="hud-bar">
-      <a class="top-brand" href="./pre-session.html#mission">CockpitSim</a>
+      <img src="../shared/img/sightline-lockup.svg" alt="CockpitSim" width="132" height="41">
       <span class="top-flight">Training in progress</span>
       <span class="hud-value" id="hud-username">Pilot</span>
       <span class="visually-hidden" id="hud-status">Live</span>
-      <button class="logout-btn" id="logout-btn" type="button">Log out</button>
     </header>
 
     <main class="live-workspace">
-      <section class="live-stage" aria-labelledby="live-heading">
+      <section class="live-stage" data-cockpit-outline aria-labelledby="live-heading">
         <div class="live-main">
-          <div class="live-title-row"><div><p class="live-kicker">Current flight</p><h1 id="live-heading"><span id="ongoing-exercise">Loading flight…</span></h1></div><span class="live-state" id="ongoing-state">Connecting</span></div>
+          <div class="live-title-row"><div><h1 id="live-heading"><span id="ongoing-exercise">Loading flight…</span></h1></div><span class="live-state" id="ongoing-state">Connecting</span></div>
           <div class="timer-block" id="remaining-row" hidden><span class="timer-label">Time remaining</span><strong id="remaining-time">—:—</strong><div class="time-track" aria-hidden="true"><span id="time-progress"></span></div></div>
           <div class="time-secondary"><span>Elapsed <strong id="elapsed-time">00:00</strong></span><span id="tol-status">Waiting for the simulator…</span></div>
           <p id="ongoing-hint" class="live-hint">The flight screen will update when simulator data arrives.</p>
-          <div class="live-actions"><button class="end-session-btn" id="btn-end-session" type="button">End session</button><a href="./pre-session.html#mission">Back to Mission</a></div>
+          <div class="live-actions"><button class="end-session-btn" id="btn-end-session" type="button" disabled>End Flight</button><a id="no-session-return" href="./pre-session.html#mission" hidden>Back to Mission</a></div>
           <span id="ongoing-session" hidden></span><span id="warning-count" hidden></span>
         </div>
         <div class="live-side"><div class="objectives-panel" id="objectives-panel" hidden><h2 class="objectives-title">Flight objectives</h2><ul class="objectives-list" id="objectives-list"></ul></div><div class="live-metric-panel"><h2>Live checks</h2><ul class="live-flags" id="live-flags"><li class="flag flag-wait">Waiting for data…</li></ul></div></div>
@@ -34,11 +34,10 @@
     </main>
   </div>
 
-  <dialog class="end-dialog" id="end-confirm" aria-labelledby="end-confirm-title"><h2 id="end-confirm-title">End this flight?</h2><p>Your session will finish and the report will be prepared from the data captured so far.</p><div><button type="button" id="cancel-end">Keep flying</button><button type="button" id="confirm-end">End session</button></div></dialog>
+  <dialog class="end-dialog" data-cockpit-outline id="end-confirm" aria-labelledby="end-confirm-title"><h2 id="end-confirm-title">End this flight?</h2><p>Your session will finish and the report will be prepared from the data captured so far.</p><div><button type="button" id="cancel-end" autofocus>Keep flying</button><button type="button" id="confirm-end">End Flight</button></div></dialog>
 
   <script src="../shared/js/api.js"></script>
   <script src="../shared/js/auth.js"></script>
-  <script src="../shared/js/logout-modal.js"></script>
   <script src="../shared/js/scenarios.js"></script>
   <script type="module" src="session-ongoing.js"></script>
 </body>

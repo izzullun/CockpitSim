@@ -107,3 +107,41 @@ body.trainee-home .dashboard-grid {
   .profile-stats { grid-column: auto; }
   .history-table th:nth-child(3), .history-table td:nth-child(3) { display: none; }
 }
+.trainee-home .app-main { height: auto; overflow: visible; }
+body.trainee-home .hud-bar {
+  grid-template-columns: minmax(0, 1fr) auto; align-items: start; height: auto;
+  width: min(100%, 94rem); margin-inline: auto; padding: 1.8rem clamp(1rem, 4vw, 3.5rem) 0;
+  border: 0; flex-basis: auto;
+}
+.trainee-home .hud-item:not(.hud-actions) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.trainee-home .app-page-title { font-size: clamp(2rem, 4vw, 2.75rem); }
+.trainee-home .mission-context { margin-top: .75rem; color: var(--ui-muted); }
+.trainee-home:not([data-active-route="mission"]) .mission-context { display: none; }
+body.trainee-home .dashboard-grid { width: min(100%, 94rem); margin-inline: auto; padding: 2rem clamp(1rem, 4vw, 3.5rem); overflow: visible; }
+.trainee-home .panel { height: auto; border: 0; border-radius: 6px; }
+.trainee-home .panel-upcoming { grid-template: auto / minmax(0, 1.45fr) minmax(0, 1fr); gap: 1.5rem; overflow: visible; background: none; }
+.trainee-home .mission-lead { display: flex; }
+.trainee-home .mission-copy, .trainee-home .mission-lower { width: 100%; background: var(--ui-panel); border-radius: 6px; border: 0; }
+.trainee-home .mission-copy { justify-content: center; min-height: 28rem; padding: clamp(1.4rem, 3vw, 2.4rem); }
+.trainee-home .mission-title { font-size: clamp(2.6rem, 5vw, 4.15rem); }
+.trainee-home .mission-brief { max-width: 60ch; color: var(--ui-muted); font-size: 1rem; }
+.trainee-home .mission-meta { gap: 2rem; margin-top: 2.5rem; align-items: start; }
+.trainee-home .mission-meta strong { display: block; margin-top: .55rem; font-size: 1rem; }
+.trainee-home #upcoming-duration { font-size: 1.65rem; }
+.trainee-home .btn-start-session { margin-top: 2.5rem; }
+.hover-outline { display: block; width: min(100%, 220px); height: auto; margin: 0 auto 1rem; }
+.trainee-home .weight-list { grid-template-columns: 1fr; gap: 0; }
+.trainee-home .mission-objective { border-bottom: 1px solid var(--ui-line); padding: .75rem 0; color: var(--ui-text); font-size: .95rem; white-space: normal; }
+.trainee-home .mission-lower { padding: clamp(1.2rem, 2vw, 1.8rem); }
+.trainee-home .mission-section-heading h3 { font-size: 1.5rem; }
+.trainee-home .mission-note { border: 0; padding: 0; margin-top: 1.2rem; }
+.trainee-home .history-table { min-width: 35rem; }
+@media (max-width: 760px) {
+  .trainee-home .panel-upcoming { grid-template-columns: 1fr; }
+  .trainee-home .mission-copy { min-height: auto; }
+}
+body.trainee-home[data-active-route="flight-log"] { height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
+.trainee-home[data-active-route="flight-log"] .app-main { flex:1; min-height:0; }
+body.trainee-home[data-active-route="flight-log"] .dashboard-grid { display:flex; flex-direction:column; }
+.trainee-home[data-active-route="flight-log"] .panel-history { flex:1; min-height:0; overflow:hidden; }
+.history-scroll { scrollbar-gutter:stable; overscroll-behavior:contain; }

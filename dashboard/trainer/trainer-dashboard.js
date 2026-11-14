@@ -1,3 +1,4 @@
+import { gradeLabel, passText, scoreText } from '../shared/js/flight-grade.js';
 // ==========================================================================
 // CockpitSim — Trainer Dashboard
 // Live data: session queue from /api/sessions/queue, real-time tracking via
@@ -27,7 +28,7 @@ let selectedSessionId = null; // specific session shown in the feedback snapshot
 const FEEDBACK_CACHE = {}; // traineeId -> [{author, time, note, sessionId?}]
 const notesCacheVersions = new Map();
 let COVERAGE = null;       // GET /api/sessions/feedback-coverage, when available
-let SESSION_FILTER = 'all'; // all | in_progress | completed | scheduled
+let SESSION_FILTER = 'completed';
 let sessionVisibleCount = 30;
 const feedbackDrafts = new Map();
 const durationSaveStates = new Map();
@@ -179,89 +180,6 @@ function newestSessionFor(traineeId) {
 	return QUEUE.find((item) => item.traineeId === traineeId) || null;
 }
 
-function sessionScenarioName(sessionId) {
-	const s = QUEUE.find((item) => item.sessionId === sessionId);
-	return s?.scenario || 'session';
-}
-
-function completedDurationsMinutes() {
-	return QUEUE
-		.filter((item) => item.status === 'completed' && item.startedAt && item.endedAt)
-		.map((item) => (parseDbDate(item.endedAt) - parseDbDate(item.startedAt)) / 60000)
-		.filter((mins) => Number.isFinite(mins) && mins >= 0);
-}
-
-function formatAvgDuration(mins) {
-	if (mins.length === 0) return '—';
-	const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
-	if (avg < 60) return `${Math.round(avg)} min`;
-	const h = Math.floor(avg / 60);
-	const m = Math.round(avg % 60);
-	return `${h}h ${m}m`;
-}
-
-function formatTotalDuration(mins) {
-	if (mins.length === 0) return 'no completed sessions yet';
-	const total = mins.reduce((a, b) => a + b, 0);
-	if (total < 60) return `total ${Math.round(total)} min`;
-	return `total ${(total / 60).toFixed(1)}h`;
-}
-
-// Sessions per week for the last 6 weeks (oldest -> newest), from queue dates.
-function sessionsPerWeek() {
-	const weeks = [0, 0, 0, 0, 0, 0];
-	const starts = [];
-	const now = new Date();
-	// Monday-start buckets for stable labels.
-	const monday = new Date(now);
-	const dow = (monday.getDay() + 6) % 7;
-	monday.setDate(monday.getDate() - dow);
-	monday.setHours(0, 0, 0, 0);
-	for (let i = 5; i >= 0; i--) {
-		const s = new Date(monday);
-		s.setDate(s.getDate() - i * 7);
-		starts.unshift(s);
-	}
-	QUEUE.forEach((item) => {
-		if (!item.startedAt) return;
-		const t = parseDbDate(item.startedAt).getTime();
-		if (!Number.isFinite(t)) return;
-		const weeksAgo = Math.floor((now.getTime() - t) / (7 * 24 * 60 * 60 * 1000));
-		if (weeksAgo >= 0 && weeksAgo < 6) weeks[5 - weeksAgo] += 1;
-	});
-	return { counts: weeks, starts };
-}
-
-function weekLabel(date) {
-	return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-}
-
-// Awaiting-feedback: prefers exact per-session coverage from the backend,
-// falls back to trainee-level (completed sessions but zero notes) for older
-// backends. Uses the same notes cache as the feedback panel when falling back.
-function awaitingFeedbackCount() {
-	if (COVERAGE && Number.isFinite(COVERAGE.awaitingTrainees)) return COVERAGE.awaitingTrainees;
-	let count = 0;
-	for (const trainee of TRAINTEES) {
-		const sessions = QUEUE.filter((item) => item.traineeId === trainee.id);
-		const hasCompleted = sessions.some((item) => item.status === 'completed');
-		if (!hasCompleted) continue;
-		const notes = FEEDBACK_CACHE[trainee.id];
-		if (Array.isArray(notes) && notes.length === 0) count += 1;
-		// notes === undefined = not loaded yet: don't count, caller refreshes after load.
-	}
-	return count;
-}
-
-function awaitingFeedbackDelta(awaiting) {
-	if (COVERAGE && Number.isFinite(COVERAGE.awaitingSessions)) {
-		if (awaiting === 0) return 'all reviewed';
-		return `${COVERAGE.awaitingSessions} sessions • ${COVERAGE.totalCompleted} completed`;
-	}
-	if (awaiting === 0) return 'all reviewed';
-	return 'trainees • completed, no notes yet';
-}
-
 function notesLoadedForAll() {
 	if (COVERAGE) return true;
 	return TRAINTEES.every((t) => Array.isArray(FEEDBACK_CACHE[t.id]));
@@ -272,50 +190,36 @@ function renderAnalytics() {
 	const container = document.getElementById('analytics-cards');
 	container.innerHTML = '';
 
-	// Real figures derived from the queue + notes cache.
-	const completed = QUEUE.filter((item) => item.status === 'completed').length;
-	const completionRate = QUEUE.length > 0 ? Math.round((completed / QUEUE.length) * 100) : 0;
-	const durations = completedDurationsMinutes();
-
-	const awaitingReady = notesLoadedForAll();
-	const awaiting = awaitingReady ? awaitingFeedbackCount() : null;
-
-	const analytics = [
-		{ label: 'Assigned trainees', value: String(TRAINTEES.length), delta: 'Your training roster' },
-		{ label: 'In session', value: String(TRAINTEES.filter((t) => t.hasLive).length), delta: 'Ready to monitor' },
-		{ label: 'Completed sessions', value: String(completed), delta: `${QUEUE.length} sessions recorded` },
-		{
-			label: 'Trainees awaiting feedback',
-			value: awaiting === null ? '…' : String(awaiting),
-			delta: awaiting === null ? 'loading notes…' : awaitingFeedbackDelta(awaiting),
-		},
-	];
-
-	analytics.forEach((item) => {
-		const block = document.createElement('article');
+	const active = QUEUE.filter((item) => item.status === 'in_progress');
+	const awaiting = COVERAGE?.awaitingSessions ?? (notesLoadedForAll() ? TRAINTEES.reduce((count, trainee) =>
+		count + (QUEUE.filter((flight) => flight.traineeId === trainee.id && queueFeedback(flight) === 'Awaiting feedback').length ?? 0), 0) : null);
+	for (const [label, value] of [['Active flights', active.length], ['Awaiting feedback', awaiting ?? '…'], ['Assigned trainees', TRAINTEES.length]]) {
+		const block = document.createElement('div');
 		block.className = 'metric-card';
-		block.innerHTML = `
-			<span class="metric-label">${item.label}</span>
-			<span class="metric-value">${item.value}</span>
-			<span class="metric-delta">${item.delta}</span>
-		`;
-		container.appendChild(block);
-	});
-
-	// Real weekly volume: sessions per week, last 6 weeks.
-	const { counts, starts } = sessionsPerWeek();
-	const peak = Math.max(1, ...counts);
-	const trendBars = document.getElementById('trend-bars');
-	trendBars.innerHTML = '';
-
-	counts.forEach((count, index) => {
-		const bar = document.createElement('div');
-		bar.className = `trend-bar${index === counts.length - 1 ? ' is-current' : ''}`;
-		bar.style.setProperty('--bar-height', `${Math.max(8, Math.round((count / peak) * 100))}%`);
-		bar.title = `Week of ${weekLabel(starts[index])}: ${count} session${count === 1 ? '' : 's'}`;
-		bar.innerHTML = `<span>${weekLabel(starts[index])}</span>`;
-		trendBars.appendChild(bar);
-	});
+		block.innerHTML = '<span class="metric-label"></span><strong class="metric-value"></strong>';
+		block.firstElementChild.textContent = label;
+		block.lastElementChild.textContent = value;
+		container.append(block);
+	}
+	const current = document.getElementById('current-flight-summary');
+	const flight = active[0];
+	current.replaceChildren();
+	if (!flight) {
+		current.textContent = 'No active flights.';
+		return;
+	}
+	const row = document.createElement('div');
+	row.className = 'overview-current-row';
+	const name = document.createElement('strong');
+	name.textContent = flight.traineeFullName;
+	const live = document.createElement('span');
+	live.textContent = 'Live';
+	row.append(name, live);
+	const link = document.createElement('a');
+	link.href = '#live-monitor';
+	link.textContent = 'Open Live Monitor to inspect current readings →';
+	link.addEventListener('click', () => setSelectedTrainee(flight.traineeId));
+	current.append(row, link);
 }
 
 function renderRoster() {
@@ -333,28 +237,26 @@ function renderRoster() {
 		const name = document.createElement('strong');
 		name.textContent = trainee.fullName;
 		const callsign = document.createElement('span');
-		callsign.textContent = trainee.callsign;
+		const latest = QUEUE.find((flight) => flight.traineeId === trainee.id);
+		const exercise = scenarioDef(latest?.scenario)?.title || latest?.scenario;
+		callsign.textContent = [exercise, trainee.status].filter(Boolean).join(' · ');
 		identity.append(name, callsign);
-		const summary = document.createElement('div');
-		summary.className = 'roster-summary';
-		const state = document.createElement('span');
-		state.textContent = trainee.status;
-		state.className = trainee.hasLive ? 'roster-live' : '';
-		const count = document.createElement('span');
-		count.textContent = `${trainee.sessionCount} session${trainee.sessionCount === 1 ? '' : 's'}`;
-		summary.append(state, count);
 		const action = document.createElement('button');
 		action.type = 'button';
 		action.className = 'secondary-action';
-		action.textContent = trainee.hasLive ? 'Monitor' : 'Review sessions';
+		action.textContent = trainee.hasLive ? 'Monitor flight' : 'Review flights';
 		action.setAttribute('aria-label', `${action.textContent} — ${trainee.fullName}`);
 		action.addEventListener('click', () => {
 			setSelectedTrainee(trainee.id);
+			if (!trainee.hasLive) {
+				document.getElementById('queue-trainee').value = trainee.id;
+				renderSessions();
+			}
 			window.location.hash = trainee.hasLive ? 'live-monitor' : 'sessions';
 			document.body.dataset.reviewPane = 'queue';
 			document.dispatchEvent(new CustomEvent('trainer:selection'));
 		});
-		row.append(identity, summary, action);
+		row.append(identity, action);
 		host.appendChild(row);
 	});
 }
@@ -481,7 +383,10 @@ function elapsedText() {
 
 // Countdown against the session's configured time limit (null = no limit).
 function liveSubmetaText(sessionId) {
-	let text = `Elapsed ${elapsedText()}${attemptLabelFor(sessionId)}`;
+	const clock = document.getElementById('live-clock');
+	clock.hidden = false;
+	clock.querySelector('strong').textContent = elapsedText();
+	let text = attemptLabelFor(sessionId).replace(/^\s*•\s*/, "");
 	if (liveStartedAt && liveTimeLimitMinutes) {
 		const rem = Math.max(0, Math.floor(
 			liveTimeLimitMinutes * 60 - (Date.now() - liveStartedAt.getTime()) / 1000));
@@ -504,7 +409,7 @@ function attemptLabelFor(sessionId) {
 // box so the trainer always sees what is being watched.
 function scenarioAspectMetrics(scenario) {
 	try {
-		const key = (scenario || 'hover').toLowerCase().includes('hover') ? 'hover' : 'hover';
+		const key = scenario || 'hover';
 		const def = (typeof scenarioDef === 'function' && scenarioDef(key)) || null;
 		if (def && Array.isArray(def.metrics)) {
 			return def.metrics.map((m) => ({
@@ -534,7 +439,12 @@ function renderLiveMetrics(report, fallbackScenario) {
 		list.appendChild(empty);
 		return;
 	}
-	metrics.forEach((m) => {
+	const secondary = metrics.filter((metric) => ['collective', 'on_ground'].includes(metric.key));
+	const context = document.getElementById('live-footer-metrics');
+	context.textContent = secondary.filter((metric) => metric.actual != null).map((metric) =>
+		metric.key === 'on_ground' ? (Number(metric.actual) ? 'On ground' : 'Airborne')
+			: metric.label + ' ' + metric.actual + (metric.unit || '')).join(' · ');
+	metrics.filter((metric) => !secondary.includes(metric)).forEach((m) => {
 		const row = document.createElement('div');
 		const state = m.withinTol === null || m.withinTol === undefined ? '' : (m.withinTol ? ' within-tol' : ' out-of-tol');
 		row.className = `stat-item${state}`;
@@ -544,7 +454,9 @@ function renderLiveMetrics(report, fallbackScenario) {
 		row.innerHTML = '<dt></dt><dd></dd><span class="stat-target"></span>';
 		row.querySelector('dt').textContent = m.label || m.key || 'metric';
 		row.querySelector('dd').textContent = actual;
-		row.querySelector('.stat-target').textContent = band;
+				row.querySelector('.stat-target').textContent = typeof m.withinTol === 'boolean'
+			? (m.withinTol ? 'Within tolerance' : 'Outside tolerance')
+			: hasBand ? band : 'Reference only';
 		list.appendChild(row);
 	});
 }
@@ -557,7 +469,7 @@ function renderLiveWarnings(report) {
 	if (warnings.length === 0) {
 		const li = document.createElement('li');
 		li.className = 'warning-item';
-		li.textContent = 'No warnings — all within tolerance.';
+		li.textContent = 'No warnings reported.';
 		list.appendChild(li);
 		return;
 	}
@@ -570,6 +482,7 @@ function renderLiveWarnings(report) {
 }
 
 function renderLiveEmpty(message) {
+	document.getElementById('live-clock').hidden = true;
 	const name = document.getElementById('live-trainee-name');
 	const meta = document.getElementById('live-trainee-meta');
 	const sub = document.getElementById('live-submeta');
@@ -581,6 +494,7 @@ function renderLiveEmpty(message) {
 }
 
 function renderLiveEnded(trainee, session) {
+	document.getElementById('live-clock').hidden = true;
 	const ended = document.getElementById('live-ended');
 	if (ended) ended.hidden = false;
 	setLiveState('ENDED');
@@ -649,7 +563,7 @@ async function pollLiveOnce() {
 			if (!liveStartedAt && res.data.startedAt) liveStartedAt = parseDbDate(res.data.startedAt);
 			const meta = document.getElementById('live-trainee-meta');
 			const sub = document.getElementById('live-submeta');
-			if (meta) meta.textContent = `${res.data.scenario || target.scenario || 'session'} • Live`;
+			if (meta) meta.textContent = `${trainee.fullName} · ${(typeof scenarioDef === 'function' ? scenarioDef(res.data.scenario || target.scenario)?.title : null) || target.scenario}${attemptLabelFor(target.sessionId)}`;
 		if (sub) sub.textContent = liveSubmetaText(target.sessionId);
 		setLiveState('LIVE');
 		if (res.data.timeLimitMinutes) liveTimeLimitMinutes = res.data.timeLimitMinutes;
@@ -698,7 +612,6 @@ function startLiveTracking() {
 	liveClock = setInterval(() => {
 		const sub = document.getElementById('live-submeta');
 		if (sub && liveSessionId && liveSessionForSelected()?.sessionId === liveSessionId) {
-			const t = QUEUE.find((i) => i.sessionId === liveSessionId);
 			sub.textContent = liveSubmetaText(liveSessionId);
 		}
 	}, 1000);
@@ -728,8 +641,6 @@ function updateSelection() {
 	document.getElementById('send-feedback-btn').disabled = !currentId || feedbackSaving;
 	document.getElementById('selected-trainee-status').textContent = trainee ? trainee.status : 'No trainees assigned';
 	renderTraineeSettings(ALL_TRAINEES);
-	document.dispatchEvent(new CustomEvent('trainer:selection'));
-
 	// Keep dropdown in sync when selection comes from session table.
 	const select = document.getElementById('live-trainee-select');
 	if (select && trainee && select.value !== trainee.id) select.value = trainee.id;
@@ -757,6 +668,7 @@ function updateSelection() {
 		if (input) input.placeholder = `Feedback for ${trainee.fullName}…`;
 	}
 
+	document.dispatchEvent(new CustomEvent('trainer:selection'));
 	renderSessionSnapshot();
 	renderFeedback();
 }
@@ -814,64 +726,122 @@ async function renderSessionSnapshot() {
 	const report = res.data;
 	const head = document.createElement('div');
 	head.className = 'snapshot-head';
-	head.innerHTML = '<span></span><span class="trainee-pill pill-warn"></span>';
-	head.querySelector('span').textContent =
-		`${report.scenario || current.scenario || 'session'} • ${formatShortDate(report.startedAt || current.startedAt)}`;
-	const scorePill = head.querySelector('.trainee-pill');
-	scorePill.textContent = (report.score === null || report.score === undefined) ? 'Score —' : `Score ${report.score}`;
-	box.appendChild(head);
-
-	// Visible score calculation (shared renderer; "" when ungraded).
-	if (typeof reportScoreBreakdown === 'function') {
-		const breakdown = document.createElement('div');
-		breakdown.innerHTML = reportScoreBreakdown(report);
-		if (breakdown.firstChild) box.appendChild(breakdown.firstChild);
-	}
-
-	const metrics = Array.isArray(report.metrics) ? report.metrics : [];
-	if (metrics.length === 0) {
-		const empty = document.createElement('div');
-		empty.className = 'feedback-empty';
-		empty.textContent = 'No metrics stored for this session.';
-		box.appendChild(empty);
-	} else {
-		const title = document.createElement('h3');
-		title.textContent = 'Flight metrics';
-		box.appendChild(title);
-		const list = document.createElement('dl');
-		list.className = 'snapshot-metrics';
-		metrics.forEach((m) => {
-			const row = document.createElement('div');
-			const state = m.withinTol === null || m.withinTol === undefined ? '' : (m.withinTol ? ' within-tol' : ' out-of-tol');
-			row.className = `snapshot-metric${state}`;
-			const actual = (m.actual === null || m.actual === undefined) ? '—' : `${m.actual} ${m.unit || ''}`.trim();
-			const hasBand = m.target !== null && m.target !== undefined;
-			const band = hasBand ? `Target ${m.target}${m.tolerance !== null && m.tolerance !== undefined ? ` ±${m.tolerance}` : ''} ${m.unit || ''}`.trim() : 'Target not available';
-			row.innerHTML = '<dt></dt><dd></dd><span></span>';
-			row.querySelector('dt').textContent = m.label || m.key || 'metric';
-			row.querySelector('dd').textContent = actual;
-			row.querySelector('span').textContent = band;
-			list.appendChild(row);
+	const title = document.createElement('h3');
+	title.textContent = scenarioDef(report.scenario)?.title || report.scenario || current.scenario;
+	const score = document.createElement('strong');
+	if (Number.isFinite(report.score)) {
+		score.append(gradeLabel(report.score), ' ' + scoreText(report.score) + ' / 100 · ' + passText(report.score));
+	} else score.textContent = 'Score unavailable';
+	head.append(title, score);
+	const controls = document.createElement('div');
+	controls.className = 'report-detail-tabs';
+	controls.setAttribute('role', 'group');
+	controls.setAttribute('aria-label', 'Flight report sections');
+	const content = document.createElement('div');
+	const previous = QUEUE.find((item) => item.traineeId === current.traineeId && item.scenario === current.scenario
+		&& item.status === 'completed' && parseDbDate(item.startedAt) < parseDbDate(current.startedAt));
+	const metrics = report.metrics || [];
+	const scored = metrics.filter((metric) => Number.isFinite(metric.weight));
+	const sections = {
+		Overview() {
+			const duration = document.createElement('p');
+			duration.textContent = 'Duration · ' + formatDurationMins(report.startedAt, report.endedAt);
+			const heading = document.createElement('h3');
+			heading.textContent = 'Recorded performance';
+			const summary = document.createElement('p');
+			if (Number.isFinite(previous?.score) && Number.isFinite(report.score)) {
+				const change = report.score - previous.score;
+				duration.textContent += ' · Previous attempt ' + (change > 0 ? '+' : '') + scoreText(change) + ' points';
+			}
+			const recorded = scored.filter((metric) => Number.isFinite(metric.withinPct));
+			summary.textContent = recorded.length ? recorded.map((metric) =>
+				metric.label + ' ' + metric.withinPct + '%').join(' · ') : 'Time within tolerance unavailable.';
+			const warning = document.createElement('p');
+			warning.className = 'snapshot-notice';
+			const count = report.warnings?.length || 0;
+			warning.textContent = count ? count + ' recorded warning' + (count === 1 ? '' : 's') + ' · See Timeline' : 'No warnings recorded.';
+			content.append(duration, heading, summary, warning);
+		},
+		Telemetry() {
+			renderDetailPages(content, metrics.map((metric) => metric.label + ' · ' +
+				(metric.actual == null ? 'Unavailable' : metric.actual + ' ' + (metric.unit || ''))), 'No telemetry stored.');
+		},
+		Timeline() {
+			const seconds = (time) => time.split(':').reduce((total, unit) => total * 60 + Number(unit), 0);
+			const events = [...report.timeline || []].sort((a, b) => seconds(a.time) - seconds(b.time));
+			renderDetailPages(content, events.map((event) => event.time + ' · ' + event.event), 'No timeline events recorded.');
+		},
+		Scoring() {
+			renderDetailPages(content, scored.map((metric) => metric.label + ' · Weight ' + metric.weight +
+				'% · ' + (metric.contribution == null ? 'Unavailable' : metric.contribution + ' points')),
+			'No score breakdown stored.');
+		},
+	};
+	for (const [label, render] of Object.entries(sections)) {
+		const tab = document.createElement('button');
+		tab.type = 'button';
+		tab.textContent = label;
+		tab.setAttribute('aria-pressed', String(label === 'Overview'));
+		tab.addEventListener('click', () => {
+			for (const control of controls.children) control.setAttribute('aria-pressed', String(control === tab));
+			content.replaceChildren();
+			render();
 		});
-		box.appendChild(list);
+		controls.append(tab);
 	}
+	box.append(head, controls, content);
+	sections.Overview();
+}
 
-	const warnings = Array.isArray(report.warnings) ? report.warnings : [];
-	const warningTitle = document.createElement('h3');
-	warningTitle.textContent = `Warnings${warnings.length ? ` (${warnings.length})` : ''}`;
-	const warningList = document.createElement('ul');
-	warningList.className = 'snapshot-warnings';
-	(warnings.length ? warnings : ['No warnings recorded.']).forEach((text) => {
-		const item = document.createElement('li');
-		item.textContent = text;
-		warningList.appendChild(item);
-	});
-	box.append(warningTitle, warningList);
+function renderDetailPages(host, entries, empty) {
+	if (!entries.length) {
+		host.textContent = empty;
+		return;
+	}
+	const list = document.createElement('ul');
+	list.className = 'snapshot-lines';
+	const controls = document.createElement('div');
+	controls.className = 'detail-pages';
+	const back = document.createElement('button');
+	const next = document.createElement('button');
+	const status = document.createElement('span');
+	status.setAttribute('role', 'status');
+	back.type = next.type = 'button';
+	back.textContent = 'Previous';
+	next.textContent = 'Next';
+	const pageSize = 5;
+	const pages = Math.ceil(entries.length / pageSize);
+	let page = 0;
+	function render() {
+		list.replaceChildren(...entries.slice(page * pageSize, (page + 1) * pageSize).map((entry) => {
+			const item = document.createElement('li');
+			item.textContent = entry;
+			return item;
+		}));
+		back.disabled = page === 0;
+		next.disabled = page + 1 === pages;
+		status.textContent = (page + 1) + ' / ' + pages;
+	}
+	back.addEventListener('click', () => { page--; render(); });
+	next.addEventListener('click', () => { page++; render(); });
+	controls.append(back, status, next);
+	host.append(list);
+	if (pages > 1) host.append(controls);
+	render();
 }
 
 function filteredQueue() {
-	const mine = QUEUE.filter((i) => i.traineeId === selectedTraineeId);
-	return SESSION_FILTER === 'all' ? mine : mine.filter((i) => i.status === SESSION_FILTER);
+	const trainee = document.getElementById('queue-trainee').value;
+	return QUEUE.filter((item) => (!trainee || item.traineeId === trainee)
+		&& (SESSION_FILTER === 'all' || item.status === SESSION_FILTER
+			|| (SESSION_FILTER === 'awaiting' && queueFeedback(item) === 'Awaiting feedback')));
+}
+
+function queueFeedback(item) {
+	if (item.status !== 'completed') return stateLabelFor(item.status);
+	const notes = FEEDBACK_CACHE[item.traineeId];
+	if (!notes) return 'Checking feedback…';
+	return notes.some((note) => note.sessionId === item.sessionId) ? 'Feedback saved' : 'Awaiting feedback';
 }
 
 function renderSessions() {
@@ -882,74 +852,54 @@ function renderSessions() {
 	document.getElementById('session-count').textContent = `${rows.length} of ${matches.length} sessions`;
 	document.getElementById('more-sessions-btn').hidden = rows.length >= matches.length;
 
-	if (QUEUE.length === 0) {
-		const row = document.createElement('tr');
-		row.innerHTML = `<td colspan="6">No sessions logged for your trainees yet.</td>`;
-		tbody.appendChild(row);
+	if (!rows.length) {
+		const cell = tbody.insertRow().insertCell();
+		cell.colSpan = 6;
+		cell.textContent = QUEUE.length ? 'No sessions match these filters.' : 'No training sessions yet.';
 		return;
 	}
-
-	if (rows.length === 0) {
+	for (const item of rows) {
 		const row = document.createElement('tr');
-		row.innerHTML = `<td colspan="6">No sessions match this filter.</td>`;
-		tbody.appendChild(row);
-		return;
-	}
-
-	rows.forEach((item) => {
-		const row = document.createElement('tr');
-		row.className = `session-row${item.sessionId === selectedSessionId ? ' is-selected' : ''}`;
+		row.className = 'session-row';
 		row.dataset.sessionId = item.sessionId;
-		row.tabIndex = 0;
-		const pill = item.status === 'in_progress' ? 'pill-ok' : item.status === 'completed' ? 'pill-warn' : 'pill-warn';
-		if (item.status === 'cancelled') row.classList.add('is-cancelled');
-		row.innerHTML = `
-			<td></td>
-			<td></td>
-			<td><time></time></td>
-			<td></td>
-			<td><span class="trainee-pill ${pill}"></span></td>
-			<td></td>
-		`;
-		row.children[0].textContent = item.traineeFullName;
-		row.children[1].textContent = item.scenario;
-		const time = row.querySelector('time');
-		time.textContent = formatSessionDateTime(item.startedAt);
-		try { time.dateTime = parseDbDate(item.startedAt).toISOString(); } catch { /* keep text only */ }
-		time.title = formatSessionDateTime(item.startedAt);
-		row.children[3].textContent = formatDurationMins(item.startedAt, item.endedAt);
-		row.querySelector('.trainee-pill').textContent = stateLabelFor(item.status);
+		row.innerHTML = '<td><strong></strong><small></small></td><td><time></time></td><td></td><td></td><td></td><td></td>';
+		row.querySelector('strong').textContent = item.traineeFullName;
+		row.querySelector('small').textContent = (scenarioDef(item.scenario)?.title || item.scenario) + attemptLabelFor(item.sessionId);
+		row.querySelector('time').textContent = formatSessionDateTime(item.startedAt);
+		row.cells[2].textContent = formatDurationMins(item.startedAt, item.endedAt);
+		row.cells[3].append(gradeLabel(item.score));
+		row.cells[4].textContent = queueFeedback(item);
+		row.cells[4].classList.toggle('queue-awaiting', row.cells[4].textContent === 'Awaiting feedback');
 		const open = document.createElement('button');
 		open.type = 'button';
 		open.className = 'queue-link';
-		open.textContent = 'Open report';
+		open.textContent = 'Review flight →';
 		open.setAttribute('aria-label', `Open ${item.scenario} report, ${formatSessionDateTime(item.startedAt)}`);
 		open.addEventListener('click', (ev) => {
 			ev.stopPropagation();
 			setSelectedSession(item.sessionId);
 		});
-		row.children[5].appendChild(open);
+		row.cells[5].append(open);
 		const select = () => {
 			setSelectedSession(item.sessionId);
 		};
 		row.addEventListener('click', select);
 		row.addEventListener('keydown', (ev) => {
-			if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(); }
+			if (ev.target === row && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); select(); }
 		});
 		tbody.appendChild(row);
-	});
+	}
 
 }
 
 function bindSessionFilters() {
-	document.querySelectorAll('.session-filters .chip').forEach((chip) => {
-		chip.addEventListener('click', () => {
-			document.querySelectorAll('.session-filters .chip').forEach((c) => c.classList.remove('is-active'));
-			chip.classList.add('is-active');
-			SESSION_FILTER = chip.dataset.filter || 'all';
+	for (const id of ['queue-trainee', 'queue-status']) {
+		document.getElementById(id).addEventListener('change', () => {
+			SESSION_FILTER = document.getElementById('queue-status').value;
 			renderSessions();
+			document.querySelector('.session-table-wrap').scrollTop = 0;
 		});
-	});
+	}
 }
 
 async function ensureNotesLoaded(traineeId) {
@@ -1004,51 +954,35 @@ async function renderFeedback() {
 		return;
 	}
 
-	// Group by session when sessionId is known (new backend), else flat list.
-	const hasSessionIds = traineeFeedback.some((e) => e.sessionId);
-	if (!hasSessionIds) {
-		traineeFeedback.forEach((entry) => {
-			const item = document.createElement('li');
-			item.className = 'feedback-item';
-			item.innerHTML = `
-				<div class="feedback-item-head"><span></span><span></span></div>
-				<div class="feedback-item-body"></div>
-			`;
-			item.querySelector('.feedback-item-head span').textContent = entry.author;
-			item.querySelector('.feedback-item-head span:last-child').textContent = entry.time;
-			// textContent avoids injecting anything typed into the note box.
-			item.querySelector('.feedback-item-body').textContent = entry.note;
-			list.appendChild(item);
-		});
-		return;
+	const entries = [...traineeFeedback].reverse();
+	const note = document.createElement('li');
+	note.className = 'feedback-item';
+	const heading = document.createElement('div');
+	heading.className = 'feedback-item-head';
+	const body = document.createElement('div');
+	body.className = 'feedback-item-body';
+	note.append(heading, body);
+	list.append(note);
+	const controls = document.createElement('div');
+	controls.className = 'detail-pages';
+	const newer = document.createElement('button');
+	const older = document.createElement('button');
+	newer.type = older.type = 'button';
+	newer.textContent = 'Newer note';
+	older.textContent = 'Older note';
+	let index = 0;
+	function renderNote() {
+		const entry = entries[index];
+		heading.textContent = entry.author + ' · ' + entry.time + ' · ' + (index + 1) + ' / ' + entries.length;
+		body.textContent = entry.note;
+		newer.disabled = index === 0;
+		older.disabled = index + 1 === entries.length;
 	}
-
-	const groups = new Map(); // sessionId|null -> entries
-	traineeFeedback.forEach((entry) => {
-		const key = entry.sessionId || 'other';
-		if (!groups.has(key)) groups.set(key, []);
-		groups.get(key).push(entry);
-	});
-	for (const [sessionId, entries] of groups) {
-		const header = document.createElement('li');
-		header.className = 'feedback-group';
-		header.textContent = sessionId === 'other'
-			? 'Other notes'
-			: `${sessionScenarioName(sessionId)} • ${entries.length} note${entries.length === 1 ? '' : 's'}`;
-		list.appendChild(header);
-		entries.forEach((entry) => {
-			const item = document.createElement('li');
-			item.className = 'feedback-item';
-			item.innerHTML = `
-				<div class="feedback-item-head"><span></span><span></span></div>
-				<div class="feedback-item-body"></div>
-			`;
-			item.querySelector('.feedback-item-head span').textContent = entry.author;
-			item.querySelector('.feedback-item-head span:last-child').textContent = entry.time;
-			item.querySelector('.feedback-item-body').textContent = entry.note;
-			list.appendChild(item);
-		});
-	}
+	newer.addEventListener('click', () => { index--; renderNote(); });
+	older.addEventListener('click', () => { index++; renderNote(); });
+	controls.append(newer, older);
+	if (entries.length > 1) list.append(controls);
+	renderNote();
 }
 
 function bindFeedbackButton() {
@@ -1097,6 +1031,8 @@ function bindFeedbackButton() {
 		}
 		renderAnalytics();
 		await refreshAwaitingFeedback();
+		await ensureNotesLoaded(traineeId);
+		renderSessions();
 		} catch {
 			if (selectedSessionId === target.sessionId) status.textContent = 'Could not reach the server. Your feedback is still here; try again.';
 		} finally {
@@ -1129,40 +1065,41 @@ async function loadTraineeSettings() {
 function renderTraineeSettings(trainees) {
 	const host = document.getElementById('trainee-settings');
 	if (!host) return;
-	const trainee = trainees.find((t) => t.traineeId === selectedTraineeId);
 	host.replaceChildren();
-	if (!trainee) {
+	if (!trainees.length) {
 		host.textContent = selectedTraineeId ? 'Duration settings unavailable. Refresh on Overview to retry.' : 'No trainees assigned to you yet.';
 		return;
 	}
-	const state = durationSaveStates.get(trainee.traineeId);
-	const row = document.createElement('div');
-	row.className = 'trainee-setting-row';
-	const name = document.createElement('span');
-	name.className = 'trainee-setting-name';
-	name.textContent = trainee.fullName;
-	const username = document.createElement('span');
-	username.className = 'trainee-setting-user';
-	username.textContent = trainee.username;
-	name.appendChild(username);
-	const select = document.createElement('select');
-	select.className = 'trainee-duration-select';
-	select.setAttribute('aria-label', `Session duration for ${trainee.fullName}`);
-	for (let minutes = 5; minutes <= 60; minutes += 5) {
-		const option = document.createElement('option');
-		option.value = minutes;
-		option.textContent = `${minutes} min`;
-		select.appendChild(option);
+	for (const trainee of trainees) {
+		const state = durationSaveStates.get(trainee.traineeId);
+		const row = document.createElement('div');
+		row.className = 'trainee-setting-row';
+		const name = document.createElement('span');
+		name.className = 'trainee-setting-name';
+		name.textContent = trainee.fullName;
+		const username = document.createElement('span');
+		username.className = 'trainee-setting-user';
+		username.textContent = trainee.username;
+		name.appendChild(username);
+		const select = document.createElement('select');
+		select.className = 'trainee-duration-select';
+		select.setAttribute('aria-label', `Session duration for ${trainee.fullName}`);
+		for (let minutes = 5; minutes <= 60; minutes += 5) {
+			const option = document.createElement('option');
+			option.value = minutes;
+			option.textContent = `${minutes} min`;
+			select.appendChild(option);
+		}
+		select.value = state?.pending ? state.minutes : (TRAINEE_SETTINGS[trainee.traineeId] ?? trainee.sessionDurationMinutes ?? 25);
+		select.disabled = Boolean(state?.pending);
+		const status = document.createElement('span');
+		status.className = 'trainee-setting-status';
+		status.setAttribute('aria-live', 'polite');
+		status.textContent = state?.message || '';
+		select.addEventListener('change', () => saveTraineeDuration(trainee.traineeId, Number(select.value)));
+		row.append(name, select, status);
+		host.appendChild(row);
 	}
-	select.value = state?.pending ? state.minutes : (TRAINEE_SETTINGS[trainee.traineeId] ?? trainee.sessionDurationMinutes ?? 25);
-	select.disabled = Boolean(state?.pending);
-	const status = document.createElement('span');
-	status.className = 'trainee-setting-status';
-	status.setAttribute('aria-live', 'polite');
-	status.textContent = state?.message || '';
-	select.addEventListener('change', () => saveTraineeDuration(trainee.traineeId, Number(select.value)));
-	row.append(name, select, status);
-	host.appendChild(row);
 }
 
 async function saveTraineeDuration(traineeId, minutes) {
@@ -1194,65 +1131,70 @@ function renderGradingGuidelines() {
 	if (!host || typeof scenarioDef !== 'function') return;
 	const def = scenarioDef('hover');
 	if (!def) return;
-	const weightRows = Object.entries(def.weights || {})
-		.map(([key, w]) => {
-			const metric = def.metrics.find((m) => m.key === key);
-			return `<tr><td>${metric ? metric.label : key}</td><td>${w}</td></tr>`;
-		})
-		.join('');
-	host.innerHTML = `
-		<div class="guideline-panel">
-			<h3>Pass / fail</h3>
-			<ul>
-				<li>Score = Σ (weight × % of session within tolerance) across graded metrics.</li>
-				<li><strong>PASS</strong>: score ≥ ${def.passThreshold}. <strong>NEEDS WORK</strong>: below ${def.passThreshold}.</li>
-				<li>Open a session report to see each metric’s contribution.</li>
-			</ul>
-			<table>
-				<thead><tr><th>Graded metric</th><th>Weight</th></tr></thead>
-				<tbody>${weightRows}</tbody>
-			</table>
-			<h3>Risk bands</h3>
-			<ul>
-				<li>Risk is the weighted breach rate: <code>100 − score</code>.</li>
-				<li><strong>Low</strong>: breach rate &lt; 10 &nbsp;•&nbsp; <strong>Medium</strong>: 10–29.9 &nbsp;•&nbsp; <strong>High</strong>: ≥ 30.</li>
-				<li>Sessions auto-end when the configured time limit expires — an expired session is graded on the telemetry captured up to that point.</li>
-			</ul>
-		</div>`;
+	const list = document.createElement('dl');
+	list.className = 'grading-rows';
+	for (const metric of def.metrics.filter((item) => Number.isFinite(item.target))) {
+		const row = document.createElement('div');
+		const label = document.createElement('dt');
+		label.textContent = metric.label;
+		const value = document.createElement('dd');
+		value.textContent = metric.target + ' ±' + metric.tolerance + ' ' + metric.unit;
+		row.append(label, value);
+		list.append(row);
+	}
+	const weights = document.createElement('p');
+	weights.textContent = def.metrics.filter((item) => def.weights[item.key] !== undefined)
+		.map((metric) => metric.label + ' ' + def.weights[metric.key] + '%').join(' · ');
+	host.replaceChildren(list, weights);
 }
 
-async function loadLiveData() {
+
+async function loadLiveData({ reloadNotes = false } = {}) {
 	try {
-	// Both calls in parallel: the queue drives sessions/analytics, while
-	// /api/trainees guarantees sessionless assigned trainees are rostered.
-	const [res, traineesRes] = await Promise.all([
-		apiRequest('/sessions/queue', { auth: true }),
-		apiRequest('/trainees', { auth: true }),
-	]);
-	if (!res.ok || !Array.isArray(res.data)) {
-		setWorkspaceMessage('Could not load sessions. Use Refresh on Overview to retry.');
-		return;
-	}
-	ALL_TRAINEES = (traineesRes.ok && Array.isArray(traineesRes.data)) ? traineesRes.data : [];
-	setWorkspaceMessage(traineesRes.ok ? '' : 'Could not load the full roster. Showing trainees with recorded sessions.');
+		// Both calls in parallel: the queue drives sessions/analytics, while
+		// /api/trainees guarantees sessionless assigned trainees are rostered.
+		const [res, traineesRes] = await Promise.all([
+			apiRequest('/sessions/queue', { auth: true }),
+			apiRequest('/trainees', { auth: true }),
+		]);
+		if (!res.ok || !Array.isArray(res.data)) {
+			setWorkspaceMessage('Could not load sessions. Use Refresh to retry.');
+			return;
+		}
+		ALL_TRAINEES = (traineesRes.ok && Array.isArray(traineesRes.data)) ? traineesRes.data : [];
+		if (traineesRes.ok) ALL_TRAINEES.forEach((item) => { TRAINEE_SETTINGS[item.traineeId] = item.sessionDurationMinutes; });
+		setWorkspaceMessage(traineesRes.ok ? '' : 'Could not load the full roster. Showing trainees with recorded sessions.');
 
-	QUEUE = res.data;
-	buildRoster();
-	if (!selectedTraineeId || !TRAINTEES.some((t) => t.id === selectedTraineeId)) {
-		// Prefer a live trainee on first load, else first in sorted order.
-		const liveFirst = TRAINTEES.find((t) => t.hasLive) || TRAINTEES[0];
-		selectedTraineeId = liveFirst ? liveFirst.id : null;
-	}
+		if (reloadNotes) {
+			for (const id of new Set([...Object.keys(FEEDBACK_CACHE), ...notesCacheVersions.keys(), ...TRAINTEES.map((item) => item.id)])) {
+				delete FEEDBACK_CACHE[id];
+				notesCacheVersions.set(id, (notesCacheVersions.get(id) || 0) + 1);
+			}
+		}
+		QUEUE = res.data;
+		buildRoster();
+		const queueTrainee = document.getElementById('queue-trainee');
+		const filter = queueTrainee.value;
+		queueTrainee.replaceChildren(new Option('All assigned trainees', ''),
+			...TRAINTEES.map((trainee) => new Option(trainee.fullName, trainee.id)));
+		queueTrainee.value = TRAINTEES.some((trainee) => trainee.id === filter) ? filter : '';
+		if (!selectedTraineeId || !TRAINTEES.some((t) => t.id === selectedTraineeId)) {
+			// Prefer a live trainee on first load, else first in sorted order.
+			const liveFirst = TRAINTEES.find((t) => t.hasLive) || TRAINTEES[0];
+			selectedTraineeId = liveFirst ? liveFirst.id : null;
+		}
 
-	renderAnalytics();
-	populateLiveDropdown();
-	updateSelection();
-	renderSessions();
-	startLiveTracking();
-	// Fill the awaiting-feedback card once notes arrive (cached for feedback panel).
-	refreshAwaitingFeedback();
+		renderAnalytics();
+		populateLiveDropdown();
+		updateSelection();
+		renderSessions();
+		startLiveTracking();
+		// Fill the awaiting-feedback card once notes arrive (cached for feedback panel).
+		refreshAwaitingFeedback();
+		Promise.all(TRAINTEES.map((trainee) => ensureNotesLoaded(trainee.id))).then(renderSessions);
+		return traineesRes.ok;
 	} catch {
-		setWorkspaceMessage('Could not reach the server. Use Refresh on Overview to retry.');
+		setWorkspaceMessage('Could not reach the server. Use Refresh to retry.');
 	}
 }
 
@@ -1264,7 +1206,7 @@ async function loadLiveData() {
 function openTraineeModal() {
 	const overlay = document.getElementById('trainee-modal-overlay');
 	if (!overlay) return;
-	overlay.hidden = false;
+	overlay.showModal();
 	const first = document.getElementById('trainee-fullName');
 	if (first) first.focus();
 }
@@ -1272,7 +1214,11 @@ function openTraineeModal() {
 function closeTraineeModal() {
 	const overlay = document.getElementById('trainee-modal-overlay');
 	if (!overlay) return;
-	overlay.hidden = true;
+	overlay.close();
+}
+
+function resetTraineeModal() {
+	document.getElementById('add-trainee-btn').focus();
 	document.getElementById('trainee-form').reset();
 	const err = document.getElementById('trainee-form-error');
 	if (err) err.hidden = true;
@@ -1296,7 +1242,8 @@ function bindTraineeModal() {
 	if (cancel) cancel.addEventListener('click', closeTraineeModal);
 
 	const overlay = document.getElementById('trainee-modal-overlay');
-	if (overlay) overlay.addEventListener('click', (e) => {
+	overlay.addEventListener('close', resetTraineeModal);
+	overlay.addEventListener('click', (e) => {
 		if (e.target === overlay) closeTraineeModal();
 	});
 
@@ -1344,16 +1291,30 @@ function bindTraineeModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-	loadLiveData();
-	loadTraineeSettings();
+
 	renderGradingGuidelines();
 	bindLiveDropdown();
 	bindSessionFilters();
 	bindFeedbackButton();
 	bindLogoutButton();
 	bindTraineeModal();
-	document.getElementById('refresh-roster-btn').addEventListener('click', () => { loadLiveData(); loadTraineeSettings(); });
-	document.getElementById('refresh-live-btn').addEventListener('click', () => loadLiveData());
+	const refresh = document.getElementById('trainer-refresh-btn');
+	const updated = document.getElementById('trainer-updated');
+	function showUpdated(success) {
+		if (success) updated.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+	}
+	loadLiveData().then(showUpdated);
+	refresh.addEventListener('click', async () => {
+		if (refresh.getAttribute('aria-disabled') === 'true') return;
+		refresh.setAttribute('aria-disabled', 'true');
+		refresh.textContent = 'Refreshing…';
+		try {
+			showUpdated(await loadLiveData({ reloadNotes: true }));
+		} finally {
+			refresh.removeAttribute('aria-disabled');
+			refresh.textContent = 'Refresh';
+		}
+	});
 	document.getElementById('more-sessions-btn').addEventListener('click', () => { sessionVisibleCount += 30; renderSessions(); });
 	window.addEventListener('beforeunload', stopLiveTimers);
 });

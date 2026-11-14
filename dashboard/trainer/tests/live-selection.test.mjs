@@ -20,7 +20,7 @@ test('returning to a live trainee restores their name after viewing an inactive 
     clearInterval() {},
     console,
   });
-  const source = readFileSync(new URL('../trainer-dashboard.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../trainer-dashboard.js', import.meta.url), 'utf8').replace(/^import .*;\r?\n/, '');
   // Expose the real polling code inside its role guard; no page startup or timers needed.
   const end = source.lastIndexOf('}');
   vm.runInContext(source.slice(0, end) + `

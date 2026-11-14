@@ -1,0 +1,46 @@
+/* Steady cyan trim on the main cockpit surfaces. The inset edge stays
+   visible inside table and dialog containers without changing their size. */
+[data-cockpit-outline] {
+  --cockpit-edge: color-mix(in srgb, var(--accent-cyan) 38%, var(--bg-panel));
+  --cockpit-glow: inset 0 0 0 1px var(--cockpit-edge), 0 0 16px var(--accent-cyan-glow);
+}
+body [data-cockpit-outline]:not(dialog), body dialog[data-cockpit-outline][open] {
+  box-shadow: var(--cockpit-glow); /* taste-skill-ignore: requested cyan cockpit outline. */
+}
+
+.login-screen .hud-bar .hud-status {
+  display: inline-flex;
+  gap: .55rem;
+  color: var(--text-primary);
+  font-size: .78rem;
+  letter-spacing: .08em;
+}
+@media (forced-colors: active) {
+  body [data-cockpit-outline]:not(dialog), body dialog[data-cockpit-outline][open] {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}
+.trainee-result .result-card[data-cockpit-outline] {
+  width: min(100% - 2rem, 50rem);
+  margin: 1rem auto;
+  border-radius: 6px;
+}
+.live-readings[data-cockpit-outline] { border-radius: 6px; padding: .75rem; }
+.app-shell .dashboard-account {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+body .dashboard-account #logout-btn,
+body.trainee-result #logout-btn,
+body.trainee-live #logout-btn {
+  border: 1px solid #ff6474;
+  border-radius: 4px;
+  color: #ffa3ac;
+  background: transparent;
+  padding: .45rem .75rem;
+  box-shadow: 0 0 9px #ff64744d; /* taste-skill-ignore: requested red logout outline. */
+}

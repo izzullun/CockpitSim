@@ -186,6 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   sessionId = new URLSearchParams(window.location.search).get("session");
   if (!sessionId) {
+    document.getElementById("btn-end-session").hidden = true;
+    document.getElementById("no-session-return").hidden = false;
     document.getElementById("ongoing-exercise").textContent = "No session selected";
     document.getElementById("ongoing-hint").textContent = "Start a session from the pre-session page first.";
     return;
@@ -193,7 +195,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const def = (typeof scenarioDef === "function" && scenarioDef("hover")) || null;
   const interval = (def && def.pollMs) || 1000;
   const confirm = document.getElementById('end-confirm');
-  document.getElementById("btn-end-session").addEventListener("click", () => confirm.showModal());
+  const endButton = document.getElementById("btn-end-session");
+  endButton.disabled = false;
+  endButton.addEventListener("click", () => confirm.showModal());
+  confirm.addEventListener('close', () => endButton.focus());
   document.getElementById('cancel-end').addEventListener('click', () => confirm.close());
   document.getElementById('confirm-end').addEventListener('click', () => { confirm.close(); endSession(); });
   listenForSimulatorEvents();
@@ -204,5 +209,4 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRemaining();
   }, 1000);
 
-  initLogoutConfirm();
 });

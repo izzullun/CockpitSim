@@ -11,15 +11,15 @@ function initLogoutConfirm(buttonId = 'logout-btn') {
 
   // Inject the modal markup once per page.
   if (!document.getElementById('logout-confirm-overlay')) {
-    const overlay = document.createElement('div');
+    const overlay = document.createElement('dialog');
     overlay.id = 'logout-confirm-overlay';
     overlay.className = 'logout-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'logout-confirm-title');
     overlay.innerHTML = `
-      <div class="logout-modal">
-        <h2 class="logout-modal-title" id="logout-confirm-title">Confirm Logout</h2>
+      <div class="logout-modal" data-cockpit-outline>
+        <h2 class="logout-modal-title" id="logout-confirm-title">Log out of CockpitSim?</h2>
         <p class="logout-modal-text">Are you sure you want to log out? Any unsaved progress will be lost.</p>
         <div class="logout-modal-actions">
           <button type="button" class="modal-btn" id="logout-cancel-btn">Cancel</button>
@@ -33,11 +33,11 @@ function initLogoutConfirm(buttonId = 'logout-btn') {
   const overlay = document.getElementById('logout-confirm-overlay');
 
   const openModal = () => {
-    overlay.classList.add('is-visible');
-    document.getElementById('logout-confirm-btn').focus();
+    overlay.showModal();
+    document.getElementById('logout-cancel-btn').focus();
   };
 
-  const closeModal = () => overlay.classList.remove('is-visible');
+  const closeModal = () => overlay.close();
 
   trigger.addEventListener('click', openModal);
 
@@ -48,10 +48,7 @@ function initLogoutConfirm(buttonId = 'logout-btn') {
     if (e.target === overlay) closeModal();
   });
 
-  // Escape key cancels.
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlay.classList.contains('is-visible')) closeModal();
-  });
+  overlay.addEventListener('close', () => trigger.focus());
 
   document.getElementById('logout-confirm-btn').addEventListener('click', () => {
     clearSession();

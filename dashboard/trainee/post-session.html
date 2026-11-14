@@ -3,28 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CockpitSim - Trainee Post Session</title>
+  <title>CockpitSim — Flight Result</title>
+  <link rel="icon" type="image/svg+xml" href="../shared/img/sightline-favicon.svg">
   <link rel="stylesheet" href="../shared/css/main.css">
   <link rel="stylesheet" href="../shared/css/theme.css">
   <link rel="stylesheet" href="../shared/css/logout-modal.css">
   <link rel="stylesheet" href="post-session-v2.css">
   <link rel="stylesheet" href="report-panel.css">
+  <link rel="stylesheet" href="../shared/css/flight-grade.css">
+  <link rel="stylesheet" href="../shared/css/cockpit-outline.css">
 </head>
 <body class="trainee-result">
   <div class="post-session-screen">
     <header class="hud-bar">
-      <a class="top-brand" href="./pre-session.html#mission">CockpitSim</a>
-      <span class="top-flight">Flight result</span>
+      <a class="top-brand" href="./pre-session.html#mission" aria-label="CockpitSim home"><img src="../shared/img/sightline-lockup.svg" alt="" width="132" height="41"></a>
+      <span class="top-flight">Helicopter training</span>
       <span class="hud-value" id="hud-username">Pilot</span>
       <span class="visually-hidden" id="hud-status">Post-session report</span>
       <button class="logout-btn" id="logout-btn" type="button">Log out</button>
     </header>
 
     <main class="result-workspace">
-      <section class="result-card" aria-live="polite">
-        <div class="result-heading"><p id="summary-exercise">Flight report</p><h1 id="result-verdict">Analysing flight…</h1><p id="result-subline">Preparing your result from the captured flight data.</p></div>
-        <div class="result-center"><div class="score-ring" id="score-ring"><svg viewBox="0 0 240 240" aria-hidden="true"><circle class="score-track" cx="120" cy="120" r="104"/><circle class="score-progress" id="score-progress" cx="120" cy="120" r="104"/></svg><div class="score-ring-label"><strong id="result-score">—</strong><span id="score-unit">score / 100</span></div></div><div class="result-stars" id="result-stars" aria-label="Result rating"></div><p class="result-comparison" id="result-comparison" hidden></p></div>
-        <div class="result-bottom"><div class="result-stats"><div><span>Flight time</span><strong id="result-flight-time">—</strong></div><div><span>Metrics tracked</span><strong id="result-metrics-count">—</strong></div><div><span>Time limit</span><strong id="result-limit">—</strong></div></div><div class="result-insights" id="result-insights" hidden><div><span>Strongest control</span><strong id="result-strongest">—</strong></div><div><span>Focus next time</span><strong id="result-focus">—</strong><p id="result-tip"></p></div></div><div class="result-actions"><a class="result-primary" href="./pre-session.html#mission">Fly again</a><button class="result-secondary" id="view-full-report" type="button" disabled>View full report</button></div></div>
+      <section class="result-card" data-cockpit-outline>
+        <h1>Flight Result</h1>
+        <p id="summary-exercise"></p>
+        <div id="result-grade" class="result-grade"></div>
+        <p id="result-score-line" class="result-score-line" hidden><strong id="result-score"></strong><span id="score-unit"> / 100</span></p>
+        <p id="result-verdict" role="status">Preparing your result…</p>
+        <div class="result-actions">
+          <a class="result-primary" href="./pre-session.html#mission">Fly Again</a>
+          <button class="result-secondary" id="view-full-report" type="button" disabled>View Full Report</button>
+        </div>
       </section>
     </main>
   </div>

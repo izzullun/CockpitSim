@@ -1,13 +1,12 @@
-/* CockpitSim dashboard theme roles. Kept local to dashboard shells so the
-   login, registration and admin-preview screens retain their existing theme. */
+/* CockpitSim dashboard surface and typography roles. */
 :root {
-  --ui-ground: #060b14;
-  --ui-panel: #0d1726;
-  --ui-raised: #13223a;
-  --ui-line: #1d3454;
+  --ui-ground: var(--bg-base);
+  --ui-panel: var(--bg-panel);
+  --ui-raised: var(--bg-panel-raised);
+  --ui-line: var(--border-strong);
   --ui-text: #e9f2fc;
-  --ui-muted: #8ca3bd;
-  --ui-cyan: #19d3ff;
+  --ui-muted: #aebacc;
+  --ui-cyan: var(--accent-cyan);
   --ui-pass: #34e8a8;
   --ui-warning: #ffb84d;
   --ui-breach: #ff6474;

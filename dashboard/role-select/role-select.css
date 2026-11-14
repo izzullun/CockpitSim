@@ -139,3 +139,15 @@
     flex-direction: column;
   }
 }
+.role-screen .role-panel { border: 0; background: var(--bg-panel); box-shadow: none; border-radius: 6px; }
+.role-screen .role-title, .role-screen .role-card-label { font-family: Bahnschrift, "Segoe UI", sans-serif; letter-spacing: 0; text-transform: none; }
+.role-screen .role-title { color: var(--text-primary); }
+.role-screen .role-card { background: var(--bg-panel-raised); border-radius: 5px; box-shadow: none; }
+.role-screen .corner { display: none; }
+.role-screen :focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 3px; }
+.role-screen .role-panel { width: min(100%, 36rem); max-width: none; padding: clamp(1rem, 4vw, 2rem); }
+.role-screen .hud-bar, .role-screen .role-subtitle, .role-screen .role-card-desc, .role-screen .back-link {
+  font-family: Bahnschrift, "Segoe UI", sans-serif; letter-spacing: 0; font-size: 1rem;
+}
+.role-screen .hud-bar { color: var(--text-primary); }
+.role-screen .status-dot { display: none; }

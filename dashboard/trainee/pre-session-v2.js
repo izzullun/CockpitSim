@@ -1,3 +1,4 @@
+import { gradeLabel } from '../shared/js/flight-grade.js';
 import { historyEntries, missionFromHistory, profileStats } from './trainee-view-model.js';
 import { openReportPanel } from './report-panel.js';
 
@@ -19,8 +20,8 @@ function renderProfile(me, sessions) {
 
 function renderMission(mission) {
   currentMission = mission;
-  document.getElementById('upcoming-exercise').textContent = mission.title;
-  document.getElementById('upcoming-date').textContent = 'On-demand flight';
+  document.getElementById('upcoming-exercise').textContent = 'Hold a steady hover.';
+  document.getElementById('upcoming-date').textContent = mission.trainerName || 'Unassigned';
   document.getElementById('upcoming-duration').textContent = mission.timeLimitMinutes
     ? `${mission.timeLimitMinutes} min` : 'Set when you start';
   const def = scenarioDef(mission.scenario);
@@ -34,24 +35,14 @@ function renderMission(mission) {
   host.replaceChildren();
   if (!def) return;
   document.getElementById('pass-mark').textContent = `Pass mark: ${def.passThreshold}`;
-  for (const [key, weight] of Object.entries(def.weights || {})) {
+  for (const metric of def.metrics.filter((item) => Number.isFinite(item.target))) {
     const row = document.createElement('div');
-    row.className = 'weight-item';
-    const label = def.metrics.find((metric) => metric.key === key)?.label || key;
-    const head = document.createElement('div');
-    head.className = 'weight-item-head';
+    row.className = 'weight-item-head mission-objective';
     const name = document.createElement('span');
-    name.textContent = label;
+    name.textContent = metric.label;
     const amount = document.createElement('strong');
-    amount.textContent = `${weight}%`;
-    head.append(name, amount);
-    const track = document.createElement('div');
-    track.className = 'weight-track';
-    const fill = document.createElement('span');
-    fill.className = 'weight-fill';
-    fill.style.setProperty('--weight-width', `${Math.min(100, weight / 35 * 100)}%`);
-    track.append(fill);
-    row.append(head, track);
+    amount.textContent = metric.target + ' ±' + metric.tolerance + ' ' + metric.unit;
+    row.append(name, amount);
     host.append(row);
   }
   document.getElementById('scoring-explanation').innerHTML =
@@ -67,7 +58,7 @@ function renderHistory(sessions) {
   if (rows.length === 0) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 5;
+    cell.colSpan = 6;
     cell.className = 'empty-row';
     cell.textContent = 'No flights yet. Your first session will appear here.';
     row.append(cell);
@@ -94,16 +85,12 @@ function renderHistory(sessions) {
       link.className = 'report-open';
       link.type = 'button';
       link.textContent = 'View result';
-      link.addEventListener('click', async () => {
-        link.disabled = true;
-        const response = await apiRequest(`/me/sessions/${entry.sessionId}/report`, { auth: true });
-        link.disabled = false;
-        if (response.ok && response.data) openReportPanel(response.data);
-        else document.getElementById('history-message').textContent = 'This report is not ready yet. Try again shortly.';
-      });
+      link.addEventListener('click', () => openReportPanel(entry.sessionId, link, 'Back to Flight Log'));
       report.append(link);
     } else report.textContent = '—';
-    row.append(flight, date, duration, state, report);
+    const grade = document.createElement('td');
+    grade.append(gradeLabel(entry.score));
+    row.append(flight, date, duration, state, grade, report);
     body.append(row);
   });
 }
@@ -114,18 +101,19 @@ async function loadDashboard() {
   ]);
   const sessions = historyRes.ok && Array.isArray(historyRes.data) ? historyRes.data : [];
   if (!historyRes.ok) {
-    document.getElementById('history-body').innerHTML = '<tr><td colspan="5">Could not load flights. Reload to try again.</td></tr>';
+    document.getElementById('history-body').innerHTML = '<tr><td colspan="6">Could not load flights. Reload to try again.</td></tr>';
   } else renderHistory(sessions);
   const me = meRes.ok && meRes.data ? meRes.data : null;
   if (me) renderProfile(me, sessions);
   else document.getElementById('profile-name').textContent = 'Profile unavailable';
   const mission = missionFromHistory(me, sessions);
-  // Trainer notes are exposed on a stored report, not on /me/sessions.
+  mission.trainerName = me?.assignedTrainerName;
+  // Load feedback for the most recent completed attempt.
   const previous = [...sessions].reverse().find((item) => item.scenario === mission.scenario && item.status === 'completed');
   if (previous) {
-    const reportRes = await apiRequest(`/me/sessions/${previous.sessionId}/report`, { auth: true });
-    if (reportRes.ok && Array.isArray(reportRes.data?.notes)) {
-      mission.trainerNote = reportRes.data.notes.at(-1)?.note || null;
+    const notesRes = await apiRequest(`/me/sessions/${previous.sessionId}/notes`, { auth: true });
+    if (notesRes.ok && Array.isArray(notesRes.data)) {
+      mission.trainerNote = notesRes.data.at(-1)?.note || null;
     }
   }
   renderMission(mission);

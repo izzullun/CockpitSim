@@ -210,3 +210,83 @@ body.trainer-app .feedback-input { width: 100%; min-height: 150px; padding: 16px
   .trainer-app .trainee-setting-row { grid-template-columns: 1fr; }
   .trainer-app .workspace-message { margin-inline: 20px; }
 }
+.trainer-app .trainer-context { grid-template-columns: minmax(0, 1fr) minmax(12rem, .85fr); gap: 1.25rem; }
+.trainer-app .workspace-heading .app-page-title { font-size: clamp(2rem, 4vw, 2.75rem); }
+.trainer-refresh { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .75rem; width: min(100%, 94rem); margin: 0 auto 1rem; padding-inline: 2rem; }
+#trainer-updated { color: var(--ui-muted); font-size: .85rem; }
+#trainer-refresh-btn[aria-disabled="true"] { cursor: wait; opacity: .75; }
+.trainer-app .panel-live { background: none; border: 0; padding: 0; }
+.trainer-app .panel-live > .panel-title, .trainer-app .panel-live .panel-corner,
+.trainer-app .panel-live .live-controls { display: none; }
+.trainer-app .live-monitor { display: grid; grid-template-columns: minmax(14rem, .75fr) minmax(0, 2fr); align-items: start; gap: 1.5rem; }
+.live-flight-card { padding: 1.75rem; background: var(--ui-panel); border-radius: 6px; }
+.live-flight-card .hover-outline { display: block; width: min(100%, 190px); margin: 0 auto 1rem; }
+.trainer-app .live-monitor .warnings-box { margin: 0 0 1rem; background: var(--ui-raised); border: 0; }
+.trainer-app .live-monitor .stat-item { background: var(--ui-panel); }
+.trainer-app .live-flight-card .text-action { display: inline-block; margin-top: 1rem; }
+.trainer-app .session-table td:nth-child(6) { font-size: 1.05rem; }
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .trainer-screen .dashboard-grid {
+  display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); align-items: start; gap: 1.5rem;
+}
+.trainer-app .panel-feedback .feedback-input { min-height: 9rem; }
+@media (max-width: 860px) {
+  .trainer-app .trainer-context, .trainer-app .live-monitor,
+  body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .trainer-screen .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trainer-refresh { justify-content: flex-start; }
+}
+.trainer-app[data-review-pane="queue"] .panel-feedback-editor { display: none; }
+.trainer-app[data-review-pane="detail"] .panel-feedback-editor:not([hidden]) { display: block; }
+.trainer-app .panel-feedback-editor { background: var(--ui-panel); border: 0; padding: 1.5rem; border-radius: 6px; }
+.trainer-app .panel-feedback-editor h2 { margin-bottom: 1.5rem; }
+.trainer-app .panel-feedback-editor .feedback-input { min-height: 9rem; }
+.trainer-app .live-flight-card .live-state { display: inline-block; margin-bottom: .65rem; }
+.trainer-app .live-flight-card #live-submeta { line-height: 1.6; }
+.trainer-app .trainee-modal { background: var(--ui-panel); box-shadow: 0 16px 48px #0008; }
+.trainer-app .trainee-modal .corner { display: none; }
+.live-clock { margin-top: 1.25rem; color: var(--ui-muted); }
+.live-clock strong { display: block; font-size: clamp(2.75rem, 5.6vw, 5rem); line-height: 1.15; color: var(--ui-cyan); font-variant-numeric: tabular-nums; }
+.trainer-app .live-flight-card { display: flex; flex-direction: column; align-items: start; }
+.live-flight-card .live-submeta { order: 2; }
+.live-flight-card .text-action { order: 3; }
+.trainer-app .panel-feedback, .trainer-app .panel-feedback-editor { min-width: 0; }
+.trainer-app .score-breakdown { overflow-x: auto; }
+.trainer-app .trainer-context {
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, .85fr) auto;
+  padding-inline: clamp(1rem, 4vw, 3.5rem);
+}
+.trainer-app .trainer-refresh { width: auto; margin: 0; padding: 0; }
+.trainer-app .trainee-context-control { justify-self: start; width: min(100%, 18rem); }
+body.trainer-app .hud-bar {
+  min-height: auto; border: 0; justify-content: flex-end;
+  padding: .65rem clamp(1rem, 4vw, 3.5rem) 0;
+}
+.trainer-app .hud-item:not(.hud-actions) { position: absolute; clip-path: inset(50%); }
+body.trainer-app .dashboard-grid,
+body.trainer-app[data-active-route="sessions"] .trainer-screen .dashboard-grid {
+  padding-inline: clamp(1rem, 4vw, 3.5rem);
+}
+.trainer-app .live-stats .stat-item.out-of-tol .stat-target { color: var(--ui-warning); }
+.trainer-app[data-review-pane="detail"] .panel-feedback { grid-area: auto; }
+.trainer-app .trainee-modal-overlay { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; background: transparent; color: var(--ui-text); backdrop-filter: none; }
+.trainer-app .trainee-modal-overlay:not([open]) { display: none; }
+.trainer-app .trainee-modal-overlay::backdrop { background: #000b; }
+.trainer-app .trainee-modal .login-title { font: 700 1.5rem var(--ui-font); letter-spacing: 0; color: var(--ui-text); text-transform: none; }
+.trainer-app .trainee-modal .field-group label { font: 600 .95rem var(--ui-font); color: var(--ui-muted); text-transform: none; letter-spacing: 0; }
+@media (max-width: 860px) { .trainer-app .trainer-context { grid-template-columns: minmax(0, 1fr); } }
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .trainer-screen .dashboard-grid {
+  grid-template-areas: none; grid-template-rows: auto;
+}
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback {
+  grid-column: 1; grid-row: 1;
+}
+body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback-editor {
+  grid-column: 2; grid-row: 1;
+}
+body.trainer-app[data-active-route="sessions"] .review-toolbar { padding-inline: clamp(1rem, 4vw, 3.5rem); }
+@media (max-width: 860px) {
+  body.trainer-app[data-active-route="sessions"][data-review-pane="detail"] .panel-feedback-editor {
+    grid-column: 1; grid-row: 2;
+  }
+}

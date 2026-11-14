@@ -227,18 +227,23 @@ public class MeController : ControllerBase
         var sessions = _db.Sessions
             .Where(s => s.TraineeId == userId)
             .OrderBy(s => s.StartedAt)
+            .Select(s => new
+            {
+                Session = s,
+                Snapshot = _db.Reports.Where(r => r.SessionId == s.Id)
+                    .Select(r => r.MetricsJson).FirstOrDefault()
+            })
             .ToList();
 
-        var result = sessions.Select((s, index) => new SessionDto
+        return Ok(sessions.Select((row, index) => new SessionDto
         {
-            SessionId = s.Id,
-            Scenario = s.Scenario ?? string.Empty,
-            StartedAt = s.StartedAt,
-            EndedAt = s.EndedAt,
-            Status = s.Status,
+            SessionId = row.Session.Id,
+            Scenario = row.Session.Scenario ?? string.Empty,
+            StartedAt = row.Session.StartedAt,
+            EndedAt = row.Session.EndedAt,
+            Status = row.Session.Status,
+            Score = StoredFlightScore.Read(row.Snapshot),
             Attempt = index + 1
-        });
-
-        return Ok(result);
+        }));
     }
 }

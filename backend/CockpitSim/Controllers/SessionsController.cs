@@ -46,20 +46,29 @@ public class SessionsController : ControllerBase
         var queue = _db.Sessions
             .Where(s => s.TraineeId != null && traineeIds.Contains(s.TraineeId))
             .OrderByDescending(s => s.StartedAt)
-            .Join(_db.Users, s => s.TraineeId, u => u.Id, (s, u) => new QueueItemDto
+            .Join(_db.Users, s => s.TraineeId, u => u.Id, (s, u) => new
             {
-                SessionId = s.Id,
-                TraineeId = s.TraineeId,
-                TraineeFullName = u.FullName,
-                TraineeUsername = u.UserName ?? string.Empty,
-                Scenario = s.Scenario ?? string.Empty,
-                Status = s.Status,
-                StartedAt = s.StartedAt,
-                EndedAt = s.EndedAt
+                Session = s,
+                u.FullName,
+                u.UserName,
+                Snapshot = _db.Reports.Where(r => r.SessionId == s.Id)
+                    .Select(r => r.MetricsJson).FirstOrDefault()
             })
             .ToList();
 
-        return Ok(queue);
+        return Ok(queue.Select(row => new QueueItemDto
+        {
+            SessionId = row.Session.Id,
+            TraineeId = row.Session.TraineeId,
+            TraineeFullName = row.FullName,
+            TraineeUsername = row.UserName ?? string.Empty,
+            Scenario = row.Session.Scenario ?? string.Empty,
+            Status = row.Session.Status,
+            StartedAt = row.Session.StartedAt,
+            EndedAt = row.Session.EndedAt,
+            Score = StoredFlightScore.Read(row.Snapshot)
+        }));
+
     }
 
     // Live telemetry snapshot for the trainer's in-session view. Shaped by the

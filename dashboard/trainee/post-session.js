@@ -54,8 +54,8 @@ function renderTelemetry(report) {
   report.metrics.forEach((m) => {
     const term = document.createElement("div");
     term.className = "stat-item";
-    const flag = m.withinTol === false ? " ⚠" : "";
-    // Value only — no target quote. Grading pass/breach shows via the ⚠ flag.
+    const flag = m.withinTol === false ? " · Outside tolerance" : "";
+    // The saved value includes a text flag when outside tolerance.
     term.innerHTML = `<dt>${m.label}${flag}</dt><dd>${fmtActual(m)}</dd>`;
     list.appendChild(term);
   });

@@ -1,0 +1,45 @@
+.flight-grade[data-grade="S"] { --grade-color: #f7ce72; }
+.flight-grade[data-grade="A"] { --grade-color: #70f5a0; }
+.flight-grade[data-grade="B"] { --grade-color: #83c4ff; }
+.flight-grade[data-grade="C"] { --grade-color: #a1c6a3; }
+.flight-grade[data-grade="D"] { --grade-color: #f5de79; }
+.flight-grade[data-grade="F"] { --grade-color: #ff8585; }
+
+.flight-grade[data-grade] {
+  position: relative;
+  display: inline-block;
+  color: var(--grade-color);
+  filter: drop-shadow(.018em .025em 0 color-mix(in srgb, var(--grade-color) 55%, #0a0e14));
+}
+
+@supports (background-clip: text) {
+  .flight-grade[data-grade="S"] {
+    background: linear-gradient(145deg, #fff4c5 15%, #e5b84f 54%, #ffe59a 74%, #c68d29); /* taste-skill-ignore: metallic gold grade. */
+    background-clip: text; /* taste-skill-ignore: metallic gold grade. */
+    color: transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flight-grade[data-grade]::after {
+      content: attr(data-grade) / "";
+      position: absolute;
+      inset: 0;
+      padding: inherit;
+      pointer-events: none;
+      color: transparent;
+      background: linear-gradient(115deg, transparent 43%, #fff 50%, transparent 57%) 100% 0 / 250% 100%; /* taste-skill-ignore: one-pass grade shine. */
+      background-clip: text; /* taste-skill-ignore: keep the shine inside the letter. */
+      animation: flight-grade-shine 740ms var(--grade-shine-delay, 140ms) ease-in-out both;
+    }
+  }
+}
+
+@keyframes flight-grade-shine {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@media (forced-colors: active) {
+  .flight-grade[data-grade] { color: CanvasText; background: none; filter: none; }
+  .flight-grade[data-grade]::after { content: none; }
+}
